@@ -1,3 +1,5 @@
+mod hardware;
+
 pub struct GameBoy {}
 
 impl GameBoy {
