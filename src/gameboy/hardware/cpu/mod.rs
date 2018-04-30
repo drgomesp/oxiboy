@@ -1,9 +1,13 @@
 mod instructions;
+mod ops;
 mod registers;
 
 use self::instructions::*;
 use self::instructions::Instruction::*;
 use self::registers::Registers;
+
+use self::ops::Ops;
+use super::bus::Bus;
 
 pub struct Cpu {
     registers: Registers,
@@ -36,4 +40,13 @@ impl InstructionCycle for Cpu {
     fn execute(&self) -> usize {
         0
     }
+}
+
+impl<'a, B> Ops for (&'a mut Cpu, &'a mut B)
+where
+    B: Bus,
+{
+    type T = ();
+
+    fn nop(self) {}
 }
