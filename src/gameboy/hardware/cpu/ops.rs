@@ -1,5 +1,6 @@
-pub trait Ops {
-    type T;
+use super::registers::Reg16;
 
-    fn nop(self) -> Self::T;
+pub trait Ops {
+    fn nop(self);
+    fn load16_imm(self, reg: Reg16, val: u16);
 }

@@ -1,3 +1,4 @@
 mod bus;
-mod cpu;
-mod interconnect;
+
+pub mod cpu;
+pub mod interconnect;
