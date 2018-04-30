@@ -1,13 +1,24 @@
 mod instructions;
+mod registers;
 
 use self::instructions::*;
 use self::instructions::Instruction::*;
+use self::registers::Registers;
 
-pub struct Cpu {}
+pub struct Cpu {
+    registers: Registers,
+}
 
 impl Cpu {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            registers: Registers::new(),
+        }
+    }
+
+    pub fn step(&self) -> usize {
+        // TODO
+        0
     }
 }
 
