@@ -63,6 +63,15 @@ impl InstructionDecoding for Cpu {
                 },
                 Reg8::A,
             ),
+            0x21 => Load16(
+                InstructionInfo {
+                    opcode: 0x21,
+                    byte_length: 3,
+                    cycle_duration: 12,
+                },
+                Reg16::HL,
+                self.next_u16(bus),
+            ),
             _ => panic!("unrecognized opcode: {:#2x}", opcode),
         }
     }

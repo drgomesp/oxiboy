@@ -16,7 +16,7 @@ pub enum Reg16 {
     // AF,
     // BC,
     // DE,
-    // HL,
+    HL,
     // PC,
     SP,
 }
@@ -45,6 +45,10 @@ impl Registers {
         use self::Reg16::*;
 
         match reg {
+            HL => {
+                (self.h = (value >> 8) as u8);
+                self.l = value as u8;
+            }
             SP => self.sp = value,
         }
     }
