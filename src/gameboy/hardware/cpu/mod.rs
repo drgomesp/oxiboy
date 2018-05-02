@@ -55,6 +55,15 @@ impl InstructionDecoding for Cpu {
                 Reg16::SP,
                 self.next_u16(bus),
             ),
+            0x32 => Load(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 8,
+                },
+                Addr::HLD,
+                Reg8::A,
+            ),
             0xAF => Xor(
                 InstructionInfo {
                     opcode: opcode,
@@ -82,6 +91,21 @@ where
     B: Bus,
 {
     fn nop(self) {}
+
+    fn load(self, addr: Addr, reg: Reg8) {
+        let (cpu, bus) = self;
+        use self::instructions::Addr::*;
+
+        let indirect_addr = match addr {
+            HLD => {
+                let addr = cpu.registers.read16(Reg16::HL);
+                cpu.registers.write16(Reg16::HL, addr - 1);
+                addr
+            }
+        };
+
+        bus.write(indirect_addr, cpu.registers.read8(reg));
+    }
 
     fn load16_imm(self, reg: Reg16, val: u16) {
         let (cpu, _) = self;

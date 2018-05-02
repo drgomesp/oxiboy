@@ -15,8 +15,14 @@ pub struct InstructionInfo {
     pub cycle_duration: usize,
 }
 
+#[derive(Copy, Clone)]
+pub enum Addr {
+    HLD,
+}
+
 pub enum Instruction {
     Nop,
+    Load(InstructionInfo, Addr, Reg8),
     Load16(InstructionInfo, Reg16, u16),
     Xor(InstructionInfo, Reg8),
 }
@@ -27,6 +33,7 @@ impl Instruction {
 
         match self {
             Nop => ops.nop(),
+            Load(_, addr, reg) => ops.load(addr, reg),
             Load16(_, reg, val) => ops.load16_imm(reg, val),
             Xor(_, reg) => ops.xor(reg),
         };
@@ -41,6 +48,7 @@ impl fmt::Display for Instruction {
 
         match *self {
             Nop => Ok(()),
+            Load(_, addr, reg) => write!(f, ""),
             Load16(info, reg, val) => write!(f, "{:#2x} LD {:?},${:4x}", info.opcode, reg, val),
             Xor(info, reg) => write!(f, "{:#2x} XOR {:?}", info.opcode, reg),
         }

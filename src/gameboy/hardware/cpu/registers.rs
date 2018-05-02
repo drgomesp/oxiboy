@@ -41,6 +41,30 @@ impl Registers {
         Registers::default()
     }
 
+    pub fn read8(&self, reg: Reg8) -> u8 {
+        use self::Reg8::*;
+
+        match reg {
+            A => self.a,
+            // B => self.b,
+            // C => self.c,
+            // D => self.d,
+            // E => self.e,
+            H => self.h,
+            // L => self.l,
+        }
+    }
+
+    pub fn read16(&self, reg: Reg16) -> u16 {
+        use self::Reg16::*;
+
+        match reg {
+            HL => ((self.h as u16) << 8) | (self.l as u16),
+            PC => self.pc,
+            SP => self.sp,
+        }
+    }
+
     pub fn write16(&mut self, reg: Reg16, value: u16) {
         use self::Reg16::*;
 
