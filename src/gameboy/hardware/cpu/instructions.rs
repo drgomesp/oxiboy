@@ -42,13 +42,25 @@ impl Instruction {
     }
 }
 
+impl fmt::Display for Addr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Addr::*;
+
+        match *self {
+            HLD => write!(f, "(HL-)"),
+        }
+    }
+}
+
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Instruction::*;
 
         match *self {
             Nop => Ok(()),
-            Load(_, addr, reg) => write!(f, ""),
+            Load(info, addr, reg) => match addr {
+                Addr::HLD => write!(f, "{:#2x} LD {:},{:?}", info.opcode, addr, reg),
+            },
             Load16(info, reg, val) => write!(f, "{:#2x} LD {:?},${:4x}", info.opcode, reg, val),
             Xor(info, reg) => write!(f, "{:#2x} XOR {:?}", info.opcode, reg),
         }
