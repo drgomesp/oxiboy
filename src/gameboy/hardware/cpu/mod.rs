@@ -3,7 +3,7 @@ mod ops;
 mod registers;
 
 use self::instructions::*;
-use self::registers::{Reg16, Registers};
+use self::registers::{Reg16, Reg8, Registers};
 
 use self::ops::Ops;
 use super::bus::Bus;
@@ -23,8 +23,6 @@ impl Cpu {
         let addr = self.registers.pc;
         let opcode = bus.read(self.registers.pc);
         let instr = self.decode(opcode, bus);
-
-        println!("${:04x} {:}", addr, instr);
 
         self.registers.pc += 1;
 
@@ -49,16 +47,23 @@ impl InstructionDecoding for Cpu {
 
         match opcode {
             0x0 => Nop,
-            0x31 => Load16 {
-                info: InstructionInfo {
+            0x31 => Load16(
+                InstructionInfo {
                     opcode: 0x31,
-                    string: "LD SP,${:#4x}",
                     byte_length: 3,
                     cycle_duration: 12,
                 },
-                reg: Reg16::SP,
-                val: self.next_u16(bus),
-            },
+                Reg16::SP,
+                self.next_u16(bus),
+            ),
+            0xAF => Xor(
+                InstructionInfo {
+                    opcode: 0xAF,
+                    byte_length: 1,
+                    cycle_duration: 4,
+                },
+                Reg8::A,
+            ),
             _ => panic!("unrecognized opcode: {:#2x}", opcode),
         }
     }
@@ -73,5 +78,16 @@ where
     fn load16_imm(self, reg: Reg16, val: u16) {
         let (cpu, _) = self;
         cpu.registers.write16(reg, val)
+    }
+
+    fn xor(self, reg: Reg8) {
+        let (cpu, _) = self;
+
+        use self::Reg8::*;
+
+        match reg {
+            A => cpu.registers.a ^= cpu.registers.a,
+            // _ => unreachable!("not implemented yet"),
+        }
     }
 }

@@ -2,7 +2,7 @@ use std::fmt;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Reg8 {
-    // A,
+    A,
     // B,
     // C,
     // D,
