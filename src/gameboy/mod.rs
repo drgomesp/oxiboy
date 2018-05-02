@@ -4,7 +4,7 @@ use self::hardware::cpu::Cpu;
 use self::hardware::interconnect::Interconnect;
 
 pub struct GameBoy {
-    cpu: Cpu,
+    pub cpu: Cpu,
     interconnect: Interconnect,
 }
 

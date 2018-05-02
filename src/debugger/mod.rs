@@ -21,6 +21,7 @@ impl Debugger {
 
             match read_stdin().parse() {
                 Ok(Command::Step) => self.gb.step(),
+                Ok(Command::DumpRegisters) => println!("{}", self.gb.cpu.registers),
                 _ => println!("invalid input"),
             };
         }

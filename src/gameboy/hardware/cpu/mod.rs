@@ -48,7 +48,7 @@ impl InstructionDecoding for Cpu {
             0x0 => Nop,
             0x31 => Load16(
                 InstructionInfo {
-                    opcode: 0x31,
+                    opcode: opcode,
                     byte_length: 3,
                     cycle_duration: 12,
                 },
@@ -57,7 +57,7 @@ impl InstructionDecoding for Cpu {
             ),
             0xAF => Xor(
                 InstructionInfo {
-                    opcode: 0xAF,
+                    opcode: opcode,
                     byte_length: 1,
                     cycle_duration: 4,
                 },
@@ -65,7 +65,7 @@ impl InstructionDecoding for Cpu {
             ),
             0x21 => Load16(
                 InstructionInfo {
-                    opcode: 0x21,
+                    opcode: opcode,
                     byte_length: 3,
                     cycle_duration: 12,
                 },
