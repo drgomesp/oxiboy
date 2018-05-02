@@ -1,6 +1,10 @@
+mod debugger;
 mod gameboy;
+mod emulation;
 
 use gameboy::GameBoy;
+// use emulation::Emulator;
+use debugger::Debugger;
 
 use std::env;
 use std::fs::File;
@@ -11,8 +15,10 @@ fn main() {
     let bootrom_file_name = env::args().nth(1).unwrap();
     let bootrom = read_bin(bootrom_file_name);
 
-    let mut gb = GameBoy::new(bootrom);
-    gb.run();
+    let gb = GameBoy::new(bootrom);
+    // let mut emu = Emulator::new(gb);
+    let mut dbg = Debugger::new(gb);
+    dbg.run();
 }
 
 fn read_bin<P: AsRef<Path>>(path: P) -> Box<[u8]> {

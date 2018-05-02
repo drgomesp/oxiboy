@@ -20,7 +20,6 @@ impl Cpu {
     }
 
     pub fn step<B: Bus>(&mut self, bus: &mut B) -> Instruction {
-        let addr = self.registers.pc;
         let opcode = bus.read(self.registers.pc);
         let instr = self.decode(opcode, bus);
 

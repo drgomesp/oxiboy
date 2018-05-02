@@ -16,10 +16,8 @@ impl GameBoy {
         }
     }
 
-    pub fn run(&mut self) {
-        loop {
-            let addr = self.cpu.registers.pc;
-            println!("${:04x} {:}", addr, self.cpu.step(&mut self.interconnect));
-        }
+    pub fn step(&mut self) {
+        let addr = self.cpu.registers.pc;
+        println!("${:04x} {:}", addr, self.cpu.step(&mut self.interconnect));
     }
 }
