@@ -8,11 +8,11 @@ use self::registers::{Reg16, Reg8, Registers};
 use self::ops::Ops;
 use super::bus::Bus;
 
-pub struct Cpu {
+pub struct LR35902 {
     pub registers: Registers,
 }
 
-impl Cpu {
+impl LR35902 {
     pub fn new() -> Self {
         Self {
             registers: Registers::new(),
@@ -40,7 +40,7 @@ impl Cpu {
     }
 }
 
-impl InstructionDecoding for Cpu {
+impl InstructionDecoding for LR35902 {
     fn decode<B: Bus>(&mut self, opcode: u8, bus: &mut B) -> Instruction {
         use self::Instruction::*;
 
@@ -86,7 +86,7 @@ impl InstructionDecoding for Cpu {
     }
 }
 
-impl<'a, B> Ops for (&'a mut Cpu, &'a mut B)
+impl<'a, B> Ops for (&'a mut LR35902, &'a mut B)
 where
     B: Bus,
 {

@@ -1,17 +1,17 @@
 mod hardware;
 
-use self::hardware::cpu::Cpu;
+use self::hardware::cpu::LR35902;
 use self::hardware::interconnect::Interconnect;
 
 pub struct GameBoy {
-    pub cpu: Cpu,
+    pub cpu: LR35902,
     interconnect: Interconnect,
 }
 
 impl GameBoy {
     pub fn new(bootrom: Box<[u8]>) -> Self {
         Self {
-            cpu: Cpu::new(),
+            cpu: LR35902::new(),
             interconnect: Interconnect::new(bootrom),
         }
     }
