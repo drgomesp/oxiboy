@@ -2,11 +2,15 @@ use super::bus::Bus;
 
 pub struct Interconnect {
     bootrom: Box<[u8]>,
+    vram: Box<[u8]>,
 }
 
 impl Interconnect {
     pub fn new(bootrom: Box<[u8]>) -> Self {
-        Self { bootrom }
+        Self {
+            bootrom: bootrom,
+            vram: vec![0; 8000].into_boxed_slice(),
+        }
     }
 
     fn read_internal(&self, addr: u16) -> u8 {
@@ -18,7 +22,9 @@ impl Interconnect {
 
     fn write_internal(&mut self, addr: u16, val: u8) {
         match addr {
-            0x8000...0x9FFF => unimplemented!("writing value {:#x} at address ${:#x}", val, addr),
+            0x8000...0x9FFF => {
+                println!("not implemented yet: missing relative adddr to physical addr mapping")
+            }
             _ => panic!(
                 "Unrecognized write at address ${:#x} with value ${:#x}",
                 addr, val

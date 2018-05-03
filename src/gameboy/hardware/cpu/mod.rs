@@ -50,6 +50,15 @@ impl InstructionDecoding for LR35902 {
 
         match opcode {
             0x0 => Nop,
+            0x21 => Load16(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 3,
+                    cycle_duration: 12,
+                },
+                Reg16::HL,
+                self.next_u16(bus),
+            ),
             0x31 => Load16(
                 InstructionInfo {
                     opcode: opcode,
@@ -76,16 +85,25 @@ impl InstructionDecoding for LR35902 {
                 },
                 Reg8::A,
             ),
-            0x21 => Load16(
-                InstructionInfo {
-                    opcode: opcode,
-                    byte_length: 3,
-                    cycle_duration: 12,
-                },
-                Reg16::HL,
-                self.next_u16(bus),
-            ),
+            0xCB => PrefixCB,
             _ => panic!("unrecognized opcode: {:#2x}", opcode),
+        }
+    }
+
+    fn decode_cb<B: Bus>(&mut self, opcode: u8, b: &mut B) -> Instruction {
+        use self::Instruction::*;
+
+        match opcode {
+            0x7C => Bit(
+                InstructionInfo {
+                    opcode: 0x7C,
+                    byte_length: 2,
+                    cycle_duration: 8,
+                },
+                7,
+                Reg8::H,
+            ),
+            _ => panic!("Unrecognized cb opcode: {:#x}", opcode),
         }
     }
 }
@@ -95,6 +113,20 @@ where
     B: Bus,
 {
     fn nop(self) {}
+
+    fn bit(self, _bit: usize, _reg: Reg8) {
+        //
+        // When 0x9FFF was loaded to ‘HL‘, indeed 0xFF was loaded to ‘L‘ and 0x9F to ‘H‘.
+        // Therefore, ‘H‘ is equal to the binary number 10011111.  The instruction BIT 7, H
+        // tests for the most significant bit of ‘H‘.  This means it just checks whether the
+        // bit is 0 or 1.  According to the result, the zero flag of the ‘F‘ register is set
+        // or cleared.  Because a value of 0x9F means that the most significant bit is 1, the
+        // zero flag is cleared.  This bit twiddling is used to know when to stop looping.
+        // The next instruction reads: Jump if not zero to the address 0xFB relative to the
+        // current address.  Because the zero flag was cleared, the ‘not zero’ condition is
+        // met, so a jump is performed.
+        //
+    }
 
     fn load(self, addr: Addr, reg: Reg8) {
         let (cpu, bus) = self;
@@ -113,7 +145,7 @@ where
 
     fn load16_imm(self, reg: Reg16, val: u16) {
         let (cpu, _) = self;
-        cpu.registers.write16(reg, val)
+        cpu.registers.write16(reg, val);
     }
 
     fn xor(self, reg: Reg8) {
@@ -126,7 +158,22 @@ where
                 let a = cpu.registers.read8(Reg8::A);
                 cpu.registers.write8(Reg8::A, a ^ a)
             }
-            // _ => unreachable!("not implemented yet"),
-        }
+            H => {
+                let h = cpu.registers.read8(Reg8::H);
+                cpu.registers.write8(Reg8::H, h ^ h)
+            }
+            _ => unimplemented!(),
+        };
+    }
+
+    fn prefix_cb(self) -> Instruction {
+        let (cpu, bus) = self;
+
+        let pc = cpu.registers.read16(Reg16::PC);
+
+        cpu.registers.write16(Reg16::PC, pc - 1);
+        let opcode = cpu.next_u8(bus);
+
+        cpu.decode_cb(opcode, bus).execute((cpu, bus))
     }
 }

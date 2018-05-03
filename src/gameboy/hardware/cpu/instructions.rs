@@ -6,6 +6,7 @@ use super::super::bus::Bus;
 
 pub trait InstructionDecoding {
     fn decode<B: Bus>(&mut self, opcode: u8, b: &mut B) -> Instruction;
+    fn decode_cb<B: Bus>(&mut self, opcode: u8, b: &mut B) -> Instruction;
 }
 
 #[derive(Copy, Clone, Default)]
@@ -22,9 +23,12 @@ pub enum Addr {
 
 pub enum Instruction {
     Nop,
+    Bit(InstructionInfo, usize, Reg8),
     Load(InstructionInfo, Addr, Reg8),
     Load16(InstructionInfo, Reg16, u16),
     Xor(InstructionInfo, Reg8),
+
+    PrefixCB,
 }
 
 impl Instruction {
@@ -32,10 +36,13 @@ impl Instruction {
         use self::Instruction::*;
 
         match self {
+            Bit(_, bit, reg) => ops.bit(bit, reg),
             Nop => ops.nop(),
             Load(_, addr, reg) => ops.load(addr, reg),
             Load16(_, reg, val) => ops.load16_imm(reg, val),
             Xor(_, reg) => ops.xor(reg),
+
+            PrefixCB => return ops.prefix_cb(),
         };
 
         self
@@ -58,11 +65,14 @@ impl fmt::Display for Instruction {
 
         match *self {
             Nop => Ok(()),
+            Bit(info, bit, reg) => write!(f, "{:#2x} BIT {:?},{:?}", info.opcode, bit, reg),
             Load(info, addr, reg) => match addr {
                 Addr::HLD => write!(f, "{:#2x} LD {:},{:?}", info.opcode, addr, reg),
             },
             Load16(info, reg, val) => write!(f, "{:#2x} LD {:?},${:4x}", info.opcode, reg, val),
             Xor(info, reg) => write!(f, "{:#2x} XOR {:?}", info.opcode, reg),
+
+            PrefixCB => Ok(()),
         }
     }
 }

@@ -7,7 +7,8 @@ pub enum Reg8 {
     // C,
     // D,
     // E,
-    // H,
+    F,
+    H,
     // L,
 }
 
@@ -50,7 +51,8 @@ impl Registers {
             // C => self.c,
             // D => self.d,
             // E => self.e,
-            // H => self.h,
+            F => self.f,
+            H => self.h,
             // L => self.l,
         }
     }
@@ -64,7 +66,8 @@ impl Registers {
             // C => self.c,
             // D => self.d,
             // E => self.e,
-            // H => self.h,
+            F => self.f = val,
+            H => self.h = val,
             // L => self.l,
         }
     }
