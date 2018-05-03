@@ -1,6 +1,6 @@
 mod instructions;
 mod ops;
-mod registers;
+pub mod registers;
 
 use self::instructions::*;
 use self::registers::{Reg16, Reg8, Registers};
@@ -20,17 +20,21 @@ impl LR35902 {
     }
 
     pub fn step<B: Bus>(&mut self, bus: &mut B) -> Instruction {
-        let opcode = bus.read(self.registers.pc);
-        let instr = self.decode(opcode, bus);
+        let pc = self.registers.read16(Reg16::PC);
+        let opcode = bus.read(pc);
 
-        self.registers.pc += 1;
+        let instr = self.decode(opcode, bus);
+        let current_pc = self.registers.read16(Reg16::PC);
+
+        self.registers.write16(Reg16::PC, current_pc + 1);
 
         instr.execute((self, bus))
     }
 
     fn next_u8(&mut self, bus: &mut Bus) -> u8 {
-        self.registers.pc += 1;
-        bus.read(self.registers.pc)
+        let pc = self.registers.read16(Reg16::PC);
+        self.registers.write16(Reg16::PC, pc + 1);
+        bus.read(self.registers.read16(Reg16::PC))
     }
 
     fn next_u16(&mut self, bus: &mut Bus) -> u16 {
@@ -118,7 +122,10 @@ where
         use self::Reg8::*;
 
         match reg {
-            A => cpu.registers.a ^= cpu.registers.a,
+            A => {
+                let a = cpu.registers.read8(Reg8::A);
+                cpu.registers.write8(Reg8::A, a ^ a)
+            }
             // _ => unreachable!("not implemented yet"),
         }
     }

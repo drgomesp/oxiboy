@@ -1,6 +1,7 @@
 mod hardware;
 
 use self::hardware::cpu::LR35902;
+use self::hardware::cpu::registers::Reg16;
 use self::hardware::interconnect::Interconnect;
 
 pub struct GameBoy {
@@ -17,7 +18,7 @@ impl GameBoy {
     }
 
     pub fn step(&mut self) {
-        let addr = self.cpu.registers.pc;
+        let addr = self.cpu.registers.read16(Reg16::PC);
         println!("${:04x} {:}", addr, self.cpu.step(&mut self.interconnect));
     }
 }
