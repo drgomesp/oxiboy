@@ -39,7 +39,7 @@ impl JumpCondition {
 }
 
 pub enum Instruction {
-    Nop,
+    Nop(InstructionInfo),
     Bit(InstructionInfo, usize, Reg8),
     Inc(InstructionInfo, Reg8),
     Load(InstructionInfo, Addr, Reg8),
@@ -66,7 +66,7 @@ impl Instruction {
 
             PrefixCB => return ops.prefix_cb(),
 
-            Nop => ops.nop(),
+            Nop(_) => ops.nop(),
         };
 
         self
@@ -90,7 +90,7 @@ impl fmt::Display for Instruction {
         use self::Instruction::*;
 
         match *self {
-            Nop => Ok(()),
+            Nop(_) => Ok(()),
             Bit(info, bit, reg) => write!(f, "{:#04X} BIT {:?},{:?}", info.opcode, bit, reg),
             Inc(info, reg) => write!(f, "{:#04X} INC {:?}", info.opcode, reg),
             Load(info, addr, reg) => match addr {

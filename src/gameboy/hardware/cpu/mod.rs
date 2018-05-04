@@ -138,7 +138,11 @@ impl InstructionDecoding for LR35902 {
                 Reg8::A,
             ),
             0xCB => PrefixCB,
-            0x0 => Nop,
+            0x00 => Nop(InstructionInfo {
+                opcode: 0x00,
+                byte_length: 1,
+                cycle_duration: 4,
+            }),
             _ => panic!("unrecognized opcode: {:#04X}", opcode),
         }
     }
@@ -214,27 +218,8 @@ where
 
     fn xor(self, reg: Reg8) {
         let (cpu, _) = self;
-
-        use self::Reg8::*;
-
-        match reg {
-            A => {
-                let a = cpu.registers.read8(Reg8::A);
-                cpu.registers.write8(Reg8::A, a ^ a)
-            }
-            C => {
-                let c = cpu.registers.read8(Reg8::C);
-                cpu.registers.write8(Reg8::C, c ^ c)
-            }
-            E => {
-                let e = cpu.registers.read8(Reg8::E);
-                cpu.registers.write8(Reg8::E, e ^ e)
-            }
-            H => {
-                let h = cpu.registers.read8(Reg8::H);
-                cpu.registers.write8(Reg8::H, h ^ h)
-            }
-        };
+        let v = cpu.registers.read8(reg);
+        cpu.registers.write8(reg, v ^ v)
     }
 
     fn jr_c(self, cond: JumpCondition, offset: i8) {
