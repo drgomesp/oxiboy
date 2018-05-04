@@ -13,9 +13,9 @@ bitflags!(
 pub enum Reg8 {
     A,
     // B,
-    // C,
+    C,
     // D,
-    // E,
+    E,
     H,
     // L,
 }
@@ -66,9 +66,9 @@ impl Registers {
         match reg {
             A => self.a,
             // B => self.b,
-            // C => self.c,
+            C => self.c,
             // D => self.d,
-            // E => self.e,
+            E => self.e,
             H => self.h,
             // L => self.l,
         }
@@ -80,9 +80,9 @@ impl Registers {
         match reg {
             A => self.a = val,
             // B => self.b,
-            // C => self.c,
+            C => self.c = val,
             // D => self.d,
-            // E => self.e,
+            E => self.e = val,
             H => self.h = val,
             // L => self.l,
         }

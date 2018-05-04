@@ -18,6 +18,8 @@ pub struct InstructionInfo {
 
 #[derive(Copy, Clone)]
 pub enum Addr {
+    C,
+    HL,
     HLD,
 }
 
@@ -39,7 +41,9 @@ impl JumpCondition {
 pub enum Instruction {
     Nop,
     Bit(InstructionInfo, usize, Reg8),
+    Inc(InstructionInfo, Reg8),
     Load(InstructionInfo, Addr, Reg8),
+    Load8(InstructionInfo, Reg8, u8),
     Load16(InstructionInfo, Reg16, u16),
     Xor(InstructionInfo, Reg8),
     JumpOn(InstructionInfo, JumpCondition, i8),
@@ -53,13 +57,16 @@ impl Instruction {
 
         match self {
             Bit(_, bit, reg) => ops.bit(bit, reg),
-            Nop => ops.nop(),
+            Inc(_, reg) => ops.inc(reg),
             Load(_, addr, reg) => ops.load(addr, reg),
+            Load8(_, reg, val) => ops.load8_imm(reg, val),
             Load16(_, reg, val) => ops.load16_imm(reg, val),
             Xor(_, reg) => ops.xor(reg),
             JumpOn(_, cond, offset) => ops.jr_c(cond, offset),
 
             PrefixCB => return ops.prefix_cb(),
+
+            Nop => ops.nop(),
         };
 
         self
@@ -71,6 +78,8 @@ impl fmt::Display for Addr {
         use self::Addr::*;
 
         match *self {
+            C => write!(f, "($FF00+C)"),
+            HL => write!(f, "(HL)"),
             HLD => write!(f, "(HL-)"),
         }
     }
@@ -82,13 +91,17 @@ impl fmt::Display for Instruction {
 
         match *self {
             Nop => Ok(()),
-            Bit(info, bit, reg) => write!(f, "{:#2x} BIT {:?},{:?}", info.opcode, bit, reg),
+            Bit(info, bit, reg) => write!(f, "{:#04X} BIT {:?},{:?}", info.opcode, bit, reg),
+            Inc(info, reg) => write!(f, "{:#04X} INC {:?}", info.opcode, reg),
             Load(info, addr, reg) => match addr {
-                Addr::HLD => write!(f, "{:#2x} LD {:},{:?}", info.opcode, addr, reg),
+                _ => write!(f, "{:#04X} LD {:},{:?}", info.opcode, addr, reg),
             },
-            Load16(info, reg, val) => write!(f, "{:#2x} LD {:?},${:4x}", info.opcode, reg, val),
-            Xor(info, reg) => write!(f, "{:#2x} XOR {:?}", info.opcode, reg),
-            JumpOn(info, cond, addr) => write!(f, "{:#2x} JR {:?},{:#2x}", info.opcode, cond, addr),
+            Load8(info, reg, val) => write!(f, "{:#04X} LD {:?},${:#04x}", info.opcode, reg, val),
+            Load16(info, reg, val) => write!(f, "{:#04X} LD {:?},${:#04x}", info.opcode, reg, val),
+            Xor(info, reg) => write!(f, "{:#04X} XOR {:?}", info.opcode, reg),
+            JumpOn(info, cond, addr) => {
+                write!(f, "{:#04X} JR {:?},${:#04x}", info.opcode, cond, addr)
+            }
 
             PrefixCB => Ok(()),
         }

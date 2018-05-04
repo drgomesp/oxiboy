@@ -23,12 +23,11 @@ impl Interconnect {
     fn write_internal(&mut self, addr: u16, val: u8) {
         match addr {
             0x8000...0x9FFF => {
-                println!("write_internal(${:#4x}, {:?}): not implemented yet: missing relative adddr to physical addr mapping", addr, val)
+                println!("write_internal(${:#4x}, {:#02X}): not implemented yet: missing relative adddr to physical addr mapping", addr, val)
+            },
+            _ => {
+                println!("write_internal(${:#4x}, {:#02X}): not implemented yet: missing relative adddr to physical addr mapping", addr, val)
             }
-            _ => panic!(
-                "Unrecognized write at address ${:#x} with value ${:#x}",
-                addr, val
-            ),
         }
     }
 }

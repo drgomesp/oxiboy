@@ -49,7 +49,15 @@ impl InstructionDecoding for LR35902 {
         use self::Instruction::*;
 
         match opcode {
-            0x0 => Nop,
+            0x0E => Load8(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 8,
+                },
+                Reg8::C,
+                self.next_u8(bus),
+            ),
             0x21 => Load16(
                 InstructionInfo {
                     opcode: opcode,
@@ -77,6 +85,15 @@ impl InstructionDecoding for LR35902 {
                 Addr::HLD,
                 Reg8::A,
             ),
+            0x3E => Load8(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 8,
+                },
+                Reg8::A,
+                self.next_u8(bus),
+            ),
             0xAF => Xor(
                 InstructionInfo {
                     opcode: opcode,
@@ -94,8 +111,35 @@ impl InstructionDecoding for LR35902 {
                 JumpCondition::NZ,
                 self.next_u8(bus) as i8,
             ),
+            0xE2 => Load(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 8,
+                },
+                Addr::C,
+                Reg8::A,
+            ),
+            0x0C => Inc(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 4,
+                },
+                Reg8::C,
+            ),
+            0x77 => Load(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 8,
+                },
+                Addr::HL,
+                Reg8::A,
+            ),
             0xCB => PrefixCB,
-            _ => panic!("unrecognized opcode: {:#2x}", opcode),
+            0x0 => Nop,
+            _ => panic!("unrecognized opcode: {:#04X}", opcode),
         }
     }
 
@@ -112,7 +156,7 @@ impl InstructionDecoding for LR35902 {
                 7,
                 Reg8::H,
             ),
-            _ => panic!("Unrecognized cb opcode: {:#x}", opcode),
+            _ => panic!("Unrecognized cb opcode: {:#04X}", opcode),
         }
     }
 }
@@ -134,11 +178,20 @@ where
         } | Flags::HALF_CARRY & cpu.registers.f;
     }
 
+    fn inc(self, reg: Reg8) {
+        let (cpu, _) = self;
+        let val = cpu.registers.read8(reg);
+
+        cpu.registers.write8(reg, val.wrapping_add(1))
+    }
+
     fn load(self, addr: Addr, reg: Reg8) {
         let (cpu, bus) = self;
         use self::instructions::Addr::*;
 
         let indirect_addr = match addr {
+            C => (0xFF00u16 | cpu.registers.read8(Reg8::C) as u16) as u16,
+            HL => cpu.registers.read16(Reg16::HL),
             HLD => {
                 let addr = cpu.registers.read16(Reg16::HL);
                 cpu.registers.write16(Reg16::HL, addr - 1);
@@ -147,6 +200,11 @@ where
         };
 
         bus.write(indirect_addr, cpu.registers.read8(reg));
+    }
+
+    fn load8_imm(self, reg: Reg8, val: u8) {
+        let (cpu, _) = self;
+        cpu.registers.write8(reg, val);
     }
 
     fn load16_imm(self, reg: Reg16, val: u16) {
@@ -164,6 +222,14 @@ where
                 let a = cpu.registers.read8(Reg8::A);
                 cpu.registers.write8(Reg8::A, a ^ a)
             }
+            C => {
+                let c = cpu.registers.read8(Reg8::C);
+                cpu.registers.write8(Reg8::C, c ^ c)
+            }
+            E => {
+                let e = cpu.registers.read8(Reg8::E);
+                cpu.registers.write8(Reg8::E, e ^ e)
+            }
             H => {
                 let h = cpu.registers.read8(Reg8::H);
                 cpu.registers.write8(Reg8::H, h ^ h)
@@ -172,12 +238,12 @@ where
     }
 
     fn jr_c(self, cond: JumpCondition, offset: i8) {
-        let (cpu, bus) = self;
+        let (cpu, _) = self;
 
         if cond.check(cpu.registers.f) {
-            let current_addr = cpu.registers.read16(Reg16::PC);
+            let curr_addr = cpu.registers.read16(Reg16::PC);
             cpu.registers
-                .write16(Reg16::PC, current_addr.wrapping_add(offset as u16));
+                .write16(Reg16::PC, curr_addr.wrapping_add(offset as u16));
         }
     }
 
