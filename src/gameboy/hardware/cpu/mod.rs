@@ -3,7 +3,7 @@ mod ops;
 pub mod registers;
 
 use self::instructions::*;
-use self::registers::{Reg16, Reg8, Registers};
+use self::registers::{Flags, Reg16, Reg8, Registers};
 
 use self::ops::Ops;
 use super::bus::Bus;
@@ -114,18 +114,15 @@ where
 {
     fn nop(self) {}
 
-    fn bit(self, _bit: usize, _reg: Reg8) {
-        //
-        // When 0x9FFF was loaded to ‘HL‘, indeed 0xFF was loaded to ‘L‘ and 0x9F to ‘H‘.
-        // Therefore, ‘H‘ is equal to the binary number 10011111.  The instruction BIT 7, H
-        // tests for the most significant bit of ‘H‘.  This means it just checks whether the
-        // bit is 0 or 1.  According to the result, the zero flag of the ‘F‘ register is set
-        // or cleared.  Because a value of 0x9F means that the most significant bit is 1, the
-        // zero flag is cleared.  This bit twiddling is used to know when to stop looping.
-        // The next instruction reads: Jump if not zero to the address 0xFB relative to the
-        // current address.  Because the zero flag was cleared, the ‘not zero’ condition is
-        // met, so a jump is performed.
-        //
+    fn bit(self, bit: usize, reg: Reg8) {
+        let (cpu, _) = self;
+        let val = cpu.registers.read8(reg) & (1 << bit);
+
+        cpu.registers.f = if val == 0 {
+            Flags::ZERO
+        } else {
+            Flags::empty()
+        } | Flags::HALF_CARRY & cpu.registers.f;
     }
 
     fn load(self, addr: Addr, reg: Reg8) {
@@ -174,6 +171,7 @@ where
         cpu.registers.write16(Reg16::PC, pc - 1);
         let opcode = cpu.next_u8(bus);
 
+        cpu.registers.write16(Reg16::PC, pc + 1);
         cpu.decode_cb(opcode, bus).execute((cpu, bus))
     }
 }

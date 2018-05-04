@@ -1,5 +1,14 @@
 use std::fmt;
 
+bitflags!(
+  pub struct Flags: u8 {
+    const ZERO = 0b_1000_0000;
+    const ADD_SUB = 0b_0100_0000;
+    const HALF_CARRY = 0b_0010_0000;
+    const CARRY = 0b_0001_0000;
+  }
+);
+
 #[derive(Clone, Copy, Debug)]
 pub enum Reg8 {
     A,
@@ -22,13 +31,12 @@ pub enum Reg16 {
     SP,
 }
 
-#[derive(Default)]
 pub struct Registers {
     pc: u16,
     sp: u16,
 
     a: u8,
-    f: u8,
+    pub f: Flags,
     b: u8,
     c: u8,
     d: u8,
@@ -39,7 +47,18 @@ pub struct Registers {
 
 impl Registers {
     pub fn new() -> Self {
-        Registers::default()
+        Self {
+            pc: 0,
+            sp: 0,
+            a: 0,
+            b: 0,
+            c: 0,
+            d: 0,
+            e: 0,
+            f: Flags::empty(),
+            h: 0,
+            l: 0,
+        }
     }
 
     pub fn read8(&self, reg: Reg8) -> u8 {
@@ -51,7 +70,7 @@ impl Registers {
             // C => self.c,
             // D => self.d,
             // E => self.e,
-            F => self.f,
+            F => unimplemented!(),
             H => self.h,
             // L => self.l,
         }
@@ -66,7 +85,7 @@ impl Registers {
             // C => self.c,
             // D => self.d,
             // E => self.e,
-            F => self.f = val,
+            F => unimplemented!(),
             H => self.h = val,
             // L => self.l,
         }
