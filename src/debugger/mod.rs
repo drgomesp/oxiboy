@@ -20,9 +20,7 @@ impl Debugger {
 
     pub fn run(&mut self) {
         loop {
-            if !self.debug {
-                self.gb.step()
-            } else {
+            if self.debug {
                 print!("oxiboy> ");
                 stdout().flush().unwrap();
 
@@ -35,6 +33,8 @@ impl Debugger {
                     Ok(Command::DumpRegisters) => println!("{}", self.gb.cpu.registers),
                     _ => println!("invalid input"),
                 };
+            } else {
+                self.gb.step()
             }
         }
     }
