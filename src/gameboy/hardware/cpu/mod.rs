@@ -85,12 +85,21 @@ impl InstructionDecoding for LR35902 {
                 },
                 Reg8::A,
             ),
+            0x20 => JumpOn(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 2,
+                    cycle_duration: 12,
+                },
+                JumpCondition::NZ,
+                self.next_u8(bus) as i8,
+            ),
             0xCB => PrefixCB,
             _ => panic!("unrecognized opcode: {:#2x}", opcode),
         }
     }
 
-    fn decode_cb<B: Bus>(&mut self, opcode: u8, b: &mut B) -> Instruction {
+    fn decode_cb<B: Bus>(&mut self, opcode: u8, _: &mut B) -> Instruction {
         use self::Instruction::*;
 
         match opcode {
@@ -159,8 +168,17 @@ where
                 let h = cpu.registers.read8(Reg8::H);
                 cpu.registers.write8(Reg8::H, h ^ h)
             }
-            _ => unimplemented!(),
         };
+    }
+
+    fn jr_c(self, cond: JumpCondition, offset: i8) {
+        let (cpu, bus) = self;
+
+        if cond.check(cpu.registers.f) {
+            let current_addr = cpu.registers.read16(Reg16::PC);
+            cpu.registers
+                .write16(Reg16::PC, current_addr.wrapping_add(offset as u16));
+        }
     }
 
     fn prefix_cb(self) -> Instruction {

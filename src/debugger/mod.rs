@@ -6,24 +6,36 @@ use std::io::Write;
 use super::gameboy::GameBoy;
 
 pub struct Debugger {
+    debug: bool,
     gb: GameBoy,
 }
 
 impl Debugger {
     pub fn new(gb: GameBoy) -> Self {
-        Self { gb: gb }
+        Self {
+            debug: true,
+            gb: gb,
+        }
     }
 
     pub fn run(&mut self) {
         loop {
-            print!("oxiboy> ");
-            stdout().flush().unwrap();
+            if !self.debug {
+                self.gb.step()
+            } else {
+                print!("oxiboy> ");
+                stdout().flush().unwrap();
 
-            match read_stdin().parse() {
-                Ok(Command::Step) => self.gb.step(),
-                Ok(Command::DumpRegisters) => println!("{}", self.gb.cpu.registers),
-                _ => println!("invalid input"),
-            };
+                match read_stdin().parse() {
+                    Ok(Command::Continue) => {
+                        self.debug = false;
+                        self.gb.step()
+                    }
+                    Ok(Command::Step) => self.gb.step(),
+                    Ok(Command::DumpRegisters) => println!("{}", self.gb.cpu.registers),
+                    _ => println!("invalid input"),
+                };
+            }
         }
     }
 }

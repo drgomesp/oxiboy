@@ -1,7 +1,7 @@
 use std::fmt;
 
 use super::ops::Ops;
-use super::registers::{Reg16, Reg8};
+use super::registers::{Flags, Reg16, Reg8};
 use super::super::bus::Bus;
 
 pub trait InstructionDecoding {
@@ -21,12 +21,28 @@ pub enum Addr {
     HLD,
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum JumpCondition {
+    NZ,
+}
+
+impl JumpCondition {
+    pub fn check(&self, flags: Flags) -> bool {
+        use self::JumpCondition::*;
+
+        match *self {
+            NZ => !flags.contains(Flags::ZERO),
+        }
+    }
+}
+
 pub enum Instruction {
     Nop,
     Bit(InstructionInfo, usize, Reg8),
     Load(InstructionInfo, Addr, Reg8),
     Load16(InstructionInfo, Reg16, u16),
     Xor(InstructionInfo, Reg8),
+    JumpOn(InstructionInfo, JumpCondition, i8),
 
     PrefixCB,
 }
@@ -41,6 +57,7 @@ impl Instruction {
             Load(_, addr, reg) => ops.load(addr, reg),
             Load16(_, reg, val) => ops.load16_imm(reg, val),
             Xor(_, reg) => ops.xor(reg),
+            JumpOn(_, cond, offset) => ops.jr_c(cond, offset),
 
             PrefixCB => return ops.prefix_cb(),
         };
@@ -71,6 +88,7 @@ impl fmt::Display for Instruction {
             },
             Load16(info, reg, val) => write!(f, "{:#2x} LD {:?},${:4x}", info.opcode, reg, val),
             Xor(info, reg) => write!(f, "{:#2x} XOR {:?}", info.opcode, reg),
+            JumpOn(info, cond, addr) => write!(f, "{:#2x} JR {:?},{:#2x}", info.opcode, cond, addr),
 
             PrefixCB => Ok(()),
         }
