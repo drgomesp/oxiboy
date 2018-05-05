@@ -45,6 +45,7 @@ pub enum Instruction {
     Inc(InstructionInfo, Reg8),
     Load(InstructionInfo, Addr, Reg8),
     Load8(InstructionInfo, Reg8, u8),
+    Load8Reg16(InstructionInfo, Reg8, Reg16),
     Load16(InstructionInfo, Reg16, u16),
     Xor(InstructionInfo, Reg8),
     JumpOn(InstructionInfo, JumpCondition, i8),
@@ -61,6 +62,7 @@ impl Instruction {
             Inc(_, reg) => ops.inc(reg),
             Load(_, addr, reg) => ops.load(addr, reg),
             Load8(_, reg, val) => ops.load8_imm(reg, val),
+            Load8Reg16(_, reg8, reg16) => ops.load16_reg(reg8, reg16),
             Load16(_, reg, val) => ops.load16_imm(reg, val),
             Xor(_, reg) => ops.xor(reg),
             JumpOn(_, cond, offset) => ops.jr_c(cond, offset),
@@ -99,6 +101,9 @@ impl fmt::Display for Instruction {
                 _ => write!(f, "{:#04X} LD {:},{:?}", info.opcode, addr, reg),
             },
             Load8(info, reg, val) => write!(f, "{:#04X} LD {:?},${:#04x}", info.opcode, reg, val),
+            Load8Reg16(info, reg8, reg16) => {
+                write!(f, "{:#04X} LD {:?},({:?})", info.opcode, reg8, reg16)
+            }
             Load16(info, reg, val) => write!(f, "{:#04X} LD {:?},${:#04x}", info.opcode, reg, val),
             Xor(info, reg) => write!(f, "{:#04X} XOR {:?}", info.opcode, reg),
             JumpOn(info, cond, addr) => {

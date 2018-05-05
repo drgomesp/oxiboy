@@ -56,6 +56,33 @@ impl InstructionDecoding for LR35902 {
                 Reg8::C,
                 self.next_u8(bus),
             ),
+            0x11 => Load16(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 3,
+                    cycle_duration: 12,
+                },
+                Reg16::DE,
+                self.next_u16(bus),
+            ),
+            0x1A => Load8Reg16(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 8,
+                },
+                Reg8::A,
+                Reg16::DE,
+            ),
+            0x20 => JumpOn(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 2,
+                    cycle_duration: 12,
+                },
+                JumpCondition::NZ,
+                self.next_u8(bus) as i8,
+            ),
             0x21 => Load16(
                 InstructionInfo {
                     opcode: opcode,
@@ -99,24 +126,6 @@ impl InstructionDecoding for LR35902 {
                     cycle_duration: 4,
                 },
                 Reg8::A,
-            ),
-            0x11 => Load16(
-                InstructionInfo {
-                    opcode: opcode,
-                    byte_length: 3,
-                    cycle_duration: 12,
-                },
-                Reg16::DE,
-                self.next_u16(bus),
-            ),
-            0x20 => JumpOn(
-                InstructionInfo {
-                    opcode: opcode,
-                    byte_length: 2,
-                    cycle_duration: 12,
-                },
-                JumpCondition::NZ,
-                self.next_u8(bus) as i8,
             ),
             0xE2 => Load(
                 InstructionInfo {
@@ -227,6 +236,10 @@ where
     fn load8_imm(self, reg: Reg8, val: u8) {
         let (cpu, _) = self;
         cpu.registers.write8(reg, val);
+    }
+
+    fn load16_reg(self, reg8: Reg8, reg16: Reg16) {
+        println!("load16_reg({:?},{:?})", reg8, reg16);
     }
 
     fn load16_imm(self, reg: Reg16, val: u16) {
