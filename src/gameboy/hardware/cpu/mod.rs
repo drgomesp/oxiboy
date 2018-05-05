@@ -137,6 +137,7 @@ impl InstructionDecoding for LR35902 {
                 Addr::HL,
                 Reg8::A,
             ),
+            0xE0 => unimplemented!(),
             0xCB => PrefixCB,
             0x00 => Nop(InstructionInfo {
                 opcode: 0x00,
