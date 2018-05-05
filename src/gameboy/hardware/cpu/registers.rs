@@ -14,7 +14,7 @@ pub enum Reg8 {
     A,
     // B,
     C,
-    // D,
+    D,
     E,
     H,
     // L,
@@ -24,7 +24,7 @@ pub enum Reg8 {
 pub enum Reg16 {
     // AF,
     // BC,
-    // DE,
+    DE,
     HL,
     PC,
     SP,
@@ -67,7 +67,7 @@ impl Registers {
             A => self.a,
             // B => self.b,
             C => self.c,
-            // D => self.d,
+            D => self.d,
             E => self.e,
             H => self.h,
             // L => self.l,
@@ -81,7 +81,7 @@ impl Registers {
             A => self.a = val,
             // B => self.b,
             C => self.c = val,
-            // D => self.d,
+            D => self.d = val,
             E => self.e = val,
             H => self.h = val,
             // L => self.l,
@@ -92,6 +92,7 @@ impl Registers {
         use self::Reg16::*;
 
         match reg {
+            DE => ((self.d as u16) << 8) | (self.e as u16),
             HL => ((self.h as u16) << 8) | (self.l as u16),
             PC => self.pc,
             SP => self.sp,
@@ -102,6 +103,10 @@ impl Registers {
         use self::Reg16::*;
 
         match reg {
+            DE => {
+                (self.d = (val >> 8) as u8);
+                self.e = val as u8;
+            }
             HL => {
                 (self.h = (val >> 8) as u8);
                 self.l = val as u8;

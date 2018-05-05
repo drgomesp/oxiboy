@@ -23,18 +23,16 @@ impl LR35902 {
         let pc = self.registers.read16(Reg16::PC);
         let opcode = bus.read(pc);
 
+        self.registers.write16(Reg16::PC, pc.wrapping_add(1));
         let instr = self.decode(opcode, bus);
-        let current_pc = self.registers.read16(Reg16::PC);
-
-        self.registers.write16(Reg16::PC, current_pc + 1);
 
         instr.execute((self, bus))
     }
 
     fn next_u8(&mut self, bus: &mut Bus) -> u8 {
         let pc = self.registers.read16(Reg16::PC);
-        self.registers.write16(Reg16::PC, pc + 1);
-        bus.read(self.registers.read16(Reg16::PC))
+        self.registers.write16(Reg16::PC, pc.wrapping_add(1));
+        bus.read(pc)
     }
 
     fn next_u16(&mut self, bus: &mut Bus) -> u16 {
@@ -101,6 +99,15 @@ impl InstructionDecoding for LR35902 {
                     cycle_duration: 4,
                 },
                 Reg8::A,
+            ),
+            0x11 => Load16(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 3,
+                    cycle_duration: 12,
+                },
+                Reg16::DE,
+                self.next_u16(bus),
             ),
             0x20 => JumpOn(
                 InstructionInfo {
@@ -203,7 +210,7 @@ where
         use self::instructions::Addr::*;
 
         let indirect_addr = match addr {
-            a8 => (0xFF00u16 | cpu.registers.read8(Reg8::A) as u16) as u16,
+            a8 => (0xFF00u16 | cpu.next_u8(bus) as u16) as u16,
             C => (0xFF00u16 | cpu.registers.read8(Reg8::C) as u16) as u16,
             HL => cpu.registers.read16(Reg16::HL),
             HLD => {
@@ -237,21 +244,16 @@ where
         let (cpu, _) = self;
 
         if cond.check(cpu.registers.f) {
-            let curr_addr = cpu.registers.read16(Reg16::PC);
+            let pc = cpu.registers.read16(Reg16::PC);
             cpu.registers
-                .write16(Reg16::PC, curr_addr.wrapping_add(offset as u16));
+                .write16(Reg16::PC, pc.wrapping_add(offset as u16));
         }
     }
 
     fn prefix_cb(self) -> Instruction {
         let (cpu, bus) = self;
-
-        let pc = cpu.registers.read16(Reg16::PC);
-
-        cpu.registers.write16(Reg16::PC, pc - 1);
         let opcode = cpu.next_u8(bus);
 
-        cpu.registers.write16(Reg16::PC, pc + 1);
         cpu.decode_cb(opcode, bus).execute((cpu, bus))
     }
 }
