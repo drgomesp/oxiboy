@@ -18,6 +18,7 @@ pub struct InstructionInfo {
 
 #[derive(Copy, Clone)]
 pub enum Addr {
+    a8,
     C,
     HL,
     HLD,
@@ -78,6 +79,7 @@ impl fmt::Display for Addr {
         use self::Addr::*;
 
         match *self {
+            a8 => write!(f, "($FF00+a8)"),
             C => write!(f, "($FF00+C)"),
             HL => write!(f, "(HL)"),
             HLD => write!(f, "(HL-)"),

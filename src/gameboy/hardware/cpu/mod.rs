@@ -137,7 +137,15 @@ impl InstructionDecoding for LR35902 {
                 Addr::HL,
                 Reg8::A,
             ),
-            0xE0 => unimplemented!(),
+            0xE0 => Load(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 2,
+                    cycle_duration: 12,
+                },
+                Addr::a8,
+                Reg8::A,
+            ),
             0xCB => PrefixCB,
             0x00 => Nop(InstructionInfo {
                 opcode: 0x00,
@@ -195,6 +203,7 @@ where
         use self::instructions::Addr::*;
 
         let indirect_addr = match addr {
+            a8 => (0xFF00u16 | cpu.registers.read8(Reg8::A) as u16) as u16,
             C => (0xFF00u16 | cpu.registers.read8(Reg8::C) as u16) as u16,
             HL => cpu.registers.read16(Reg16::HL),
             HLD => {
@@ -202,6 +211,7 @@ where
                 cpu.registers.write16(Reg16::HL, addr - 1);
                 addr
             }
+            _ => unimplemented!(),
         };
 
         bus.write(indirect_addr, cpu.registers.read8(reg));
