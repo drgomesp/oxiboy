@@ -52,7 +52,7 @@ impl InstructionDecoding for LR35902 {
 
         match opcode {
             0x0E => Load(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 1,
                     cycle_duration: 8,
@@ -61,7 +61,7 @@ impl InstructionDecoding for LR35902 {
                 Src::D8(self.next_u8(bus)),
             ),
             0x11 => Load(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 3,
                     cycle_duration: 12,
@@ -70,7 +70,7 @@ impl InstructionDecoding for LR35902 {
                 Src::D16(self.next_u16(bus)),
             ),
             0x1A => Load(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 1,
                     cycle_duration: 8,
@@ -79,7 +79,7 @@ impl InstructionDecoding for LR35902 {
                 Src::Reg16(Reg16::DE),
             ),
             0x20 => JumpOn(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 2,
                     cycle_duration: 12,
@@ -88,7 +88,7 @@ impl InstructionDecoding for LR35902 {
                 self.next_u8(bus) as i8,
             ),
             0x21 => Load(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 3,
                     cycle_duration: 12,
@@ -97,7 +97,7 @@ impl InstructionDecoding for LR35902 {
                 Src::D16(self.next_u16(bus)),
             ),
             0x31 => Load(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 3,
                     cycle_duration: 12,
@@ -106,7 +106,7 @@ impl InstructionDecoding for LR35902 {
                 Src::D16(self.next_u16(bus)),
             ),
             0x32 => Load(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 1,
                     cycle_duration: 8,
@@ -115,7 +115,7 @@ impl InstructionDecoding for LR35902 {
                 Src::Reg8(Reg8::A),
             ),
             0x3E => Load(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 1,
                     cycle_duration: 8,
@@ -124,7 +124,7 @@ impl InstructionDecoding for LR35902 {
                 Src::D8(self.next_u8(bus)),
             ),
             0xAF => Xor(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 1,
                     cycle_duration: 4,
@@ -132,7 +132,7 @@ impl InstructionDecoding for LR35902 {
                 Reg8::A,
             ),
             0xE2 => Load(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 1,
                     cycle_duration: 8,
@@ -141,7 +141,7 @@ impl InstructionDecoding for LR35902 {
                 Src::Reg8(Reg8::A),
             ),
             0x0C => Inc(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 1,
                     cycle_duration: 4,
@@ -149,7 +149,7 @@ impl InstructionDecoding for LR35902 {
                 Reg8::C,
             ),
             0x77 => Load(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 1,
                     cycle_duration: 8,
@@ -158,7 +158,7 @@ impl InstructionDecoding for LR35902 {
                 Src::Reg8(Reg8::A),
             ),
             0xCD => Call(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 3,
                     cycle_duration: 24,
@@ -166,7 +166,7 @@ impl InstructionDecoding for LR35902 {
                 self.next_u16(bus),
             ),
             0xE0 => Load(
-                InstructionInfo {
+                Info {
                     opcode: opcode,
                     byte_length: 2,
                     cycle_duration: 12,
@@ -175,7 +175,7 @@ impl InstructionDecoding for LR35902 {
                 Src::Reg8(Reg8::A),
             ),
             0xCB => PrefixCB,
-            0x00 => Nop(InstructionInfo {
+            0x00 => Nop(Info {
                 opcode: 0x00,
                 byte_length: 1,
                 cycle_duration: 4,
@@ -189,7 +189,7 @@ impl InstructionDecoding for LR35902 {
 
         match opcode {
             0x7C => Bit(
-                InstructionInfo {
+                Info {
                     opcode: 0x7C,
                     byte_length: 2,
                     cycle_duration: 8,

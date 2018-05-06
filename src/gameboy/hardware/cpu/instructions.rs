@@ -10,7 +10,7 @@ pub trait InstructionDecoding {
 }
 
 #[derive(Copy, Clone, Default)]
-pub struct InstructionInfo {
+pub struct Info {
     pub opcode: u8,
     pub byte_length: usize,
     pub cycle_duration: usize,
@@ -48,13 +48,13 @@ impl JumpCondition {
 }
 
 pub enum Instruction {
-    Nop(InstructionInfo),
-    Bit(InstructionInfo, usize, Reg8),
-    Inc(InstructionInfo, Reg8),
-    Load(InstructionInfo, Dst, Src),
-    Xor(InstructionInfo, Reg8),
-    Call(InstructionInfo, u16),
-    JumpOn(InstructionInfo, JumpCondition, i8),
+    Nop(Info),
+    Bit(Info, usize, Reg8),
+    Inc(Info, Reg8),
+    Load(Info, Dst, Src),
+    Xor(Info, Reg8),
+    Call(Info, u16),
+    JumpOn(Info, JumpCondition, i8),
 
     PrefixCB,
 }
