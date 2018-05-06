@@ -29,17 +29,21 @@ impl LR35902 {
         instr.execute((self, bus))
     }
 
-    fn next_u8(&mut self, bus: &mut Bus) -> u8 {
+    fn next_u8<B: Bus>(&mut self, bus: &mut B) -> u8 {
         let pc = self.registers.read16(Reg16::PC);
         self.registers.write16(Reg16::PC, pc.wrapping_add(1));
         bus.read(pc)
     }
 
-    fn next_u16(&mut self, bus: &mut Bus) -> u16 {
+    fn next_u16<B: Bus>(&mut self, bus: &mut B) -> u16 {
         let l = self.next_u8(bus);
         let h = self.next_u8(bus);
         ((h as u16) << 8) | (l as u16)
     }
+
+    fn push_u8<B: Bus>(&mut self, bus: &mut B, val: u8) {}
+
+    fn push_u16<B: Bus>(&mut self, bus: &mut B, val: u16) {}
 }
 
 impl InstructionDecoding for LR35902 {
@@ -153,6 +157,14 @@ impl InstructionDecoding for LR35902 {
                 Dst::Reg16(Reg16::HL),
                 Src::Reg8(Reg8::A),
             ),
+            0xCD => Call(
+                InstructionInfo {
+                    opcode: opcode,
+                    byte_length: 3,
+                    cycle_duration: 24,
+                },
+                self.next_u16(bus),
+            ),
             0xE0 => Load(
                 InstructionInfo {
                     opcode: opcode,
@@ -222,7 +234,7 @@ where
             Src::D16(val) => val,
             Src::Reg8(reg) => cpu.registers.read8(reg) as u16,
             Src::Reg16(reg) => cpu.registers.read16(reg),
-            _ => unimplemented!("load() src: {:?}, dst: {:?}", src, dst),
+            _ => unimplemented!("load() src: {:?}", src),
         };
 
         match dst {
@@ -245,6 +257,13 @@ where
         let (cpu, _) = self;
         let v = cpu.registers.read8(reg);
         cpu.registers.write8(reg, v ^ v)
+    }
+
+    fn call(self, addr: u16) {
+        let (cpu, bus) = self;
+        let pc = cpu.registers.read16(Reg16::PC);
+        cpu.push_u16(bus, pc);
+        cpu.registers.write16(Reg16::PC, addr);
     }
 
     fn jr_c(self, cond: JumpCondition, offset: i8) {

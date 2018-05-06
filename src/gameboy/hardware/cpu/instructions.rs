@@ -53,6 +53,7 @@ pub enum Instruction {
     Inc(InstructionInfo, Reg8),
     Load(InstructionInfo, Dst, Src),
     Xor(InstructionInfo, Reg8),
+    Call(InstructionInfo, u16),
     JumpOn(InstructionInfo, JumpCondition, i8),
 
     PrefixCB,
@@ -67,6 +68,7 @@ impl Instruction {
             Inc(_, reg) => ops.inc(reg),
             Load(_, addr, reg) => ops.load(addr, reg),
             Xor(_, reg) => ops.xor(reg),
+            Call(_, addr) => ops.call(addr),
             JumpOn(_, cond, offset) => ops.jr_c(cond, offset),
 
             PrefixCB => return ops.prefix_cb(),
@@ -116,6 +118,7 @@ impl fmt::Display for Instruction {
             Inc(info, reg) => write!(f, "{:02X} INC {:?}", info.opcode, reg),
             Load(info, dst, src) => write!(f, "{:02X} LD {:},{:}", info.opcode, dst, src),
             Xor(info, reg) => write!(f, "{:02X} XOR {:?}", info.opcode, reg),
+            Call(info, addr) => write!(f, "{:02X} CALL ${:#06X}", info.opcode, addr),
             JumpOn(info, cond, addr) => {
                 write!(f, "{:02X} JR {:?},${:#04X}", info.opcode, cond, addr)
             }
