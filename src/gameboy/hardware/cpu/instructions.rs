@@ -28,6 +28,7 @@ pub enum Src {
 pub enum Dst {
     A8(u8),
     Reg8(Reg8),
+    PagedReg8(Reg8),
     Reg16(Reg16),
     Reg16Dec(Reg16),
 }
@@ -101,6 +102,7 @@ impl fmt::Display for Dst {
         match *self {
             A8(val) => write!(f, "($FF00+${:#04X})", val),
             Reg8(reg) => write!(f, "{:?}", reg),
+            PagedReg8(reg) => write!(f, "($FF00+{:?})", reg),
             Reg16(reg) => write!(f, "{:?}", reg),
             Reg16Dec(reg) => write!(f, "({:?}-)", reg),
             _ => unimplemented!("display dst:{:?}", *self),
@@ -119,9 +121,7 @@ impl fmt::Display for Instruction {
             Load(info, dst, src) => write!(f, "{:02X} LD {:},{:}", info.opcode, dst, src),
             Xor(info, reg) => write!(f, "{:02X} XOR {:?}", info.opcode, reg),
             Call(info, addr) => write!(f, "{:02X} CALL ${:#06X}", info.opcode, addr),
-            JumpOn(info, cond, addr) => {
-                write!(f, "{:02X} JR {:?},${:#04X}", info.opcode, cond, addr)
-            }
+            JumpOn(info, cd, addr) => write!(f, "{:02X} JR {:?},${:#04X}", info.opcode, cd, addr),
 
             PrefixCB => Ok(()),
         }

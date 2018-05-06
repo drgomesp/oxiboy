@@ -137,7 +137,7 @@ impl InstructionDecoding for LR35902 {
                     byte_length: 1,
                     cycle_duration: 8,
                 },
-                Dst::Reg8(Reg8::C),
+                Dst::PagedReg8(Reg8::C),
                 Src::Reg8(Reg8::A),
             ),
             0x0C => Inc(
@@ -239,10 +239,14 @@ where
 
         match dst {
             Dst::A8(val) => {
-                let addr = (0xFF00u16 | val as u16) as u16;
+                let addr = 0xFF00u16 | val as u16;
                 bus.write(addr, cpu.registers.read8(Reg8::A))
             }
             Dst::Reg8(reg) => cpu.registers.write8(reg, val as u8),
+            Dst::PagedReg8(reg) => {
+                let addr = 0xFF00u16 | cpu.registers.read8(reg) as u16;
+                bus.write(addr, cpu.registers.read8(Reg8::A))
+            }
             Dst::Reg16(reg) => cpu.registers.write16(reg, val),
             Dst::Reg16Dec(reg) => {
                 let addr = cpu.registers.read16(reg);
