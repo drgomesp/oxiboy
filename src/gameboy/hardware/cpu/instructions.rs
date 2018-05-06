@@ -56,12 +56,13 @@ pub enum Instruction {
     Xor(Info, Reg8),
     Call(Info, u16),
     JumpOn(Info, JumpCondition, i8),
+    Push16(Info, Reg16),
 
     PrefixCB,
 }
 
 impl Instruction {
-    pub fn execute<O: Ops>(self, ops: O) -> Instruction {
+    pub fn execute<O: Ops>(self, ops: O) -> Self {
         use self::Instruction::*;
 
         match self {
@@ -71,11 +72,12 @@ impl Instruction {
             Xor(_, reg) => ops.xor(reg),
             Call(_, addr) => ops.call(addr),
             JumpOn(_, cond, offset) => ops.jr_c(cond, offset),
+            Push16(_, reg) => ops.push16(reg),
 
             PrefixCB => return ops.prefix_cb(),
 
             Nop(_) => ops.nop(),
-        };
+        }
 
         self
     }
@@ -90,7 +92,6 @@ impl fmt::Display for Src {
             D16(val) => write!(f, "${:#04X}", val),
             Reg8(reg) => write!(f, "{:?}", reg),
             Reg16(reg) => write!(f, "({:?})", reg),
-            _ => unimplemented!("display src:{:?}", *self),
         }
     }
 }
@@ -105,7 +106,6 @@ impl fmt::Display for Dst {
             PagedReg8(reg) => write!(f, "($FF00+{:?})", reg),
             Reg16(reg) => write!(f, "{:?}", reg),
             Reg16Dec(reg) => write!(f, "({:?}-)", reg),
-            _ => unimplemented!("display dst:{:?}", *self),
         }
     }
 }
@@ -122,6 +122,7 @@ impl fmt::Display for Instruction {
             Xor(info, reg) => write!(f, "{:02X} XOR {:?}", info.opcode, reg),
             Call(info, addr) => write!(f, "{:02X} CALL ${:#06X}", info.opcode, addr),
             JumpOn(info, cd, addr) => write!(f, "{:02X} JR {:?},${:#04X}", info.opcode, cd, addr),
+            Push16(info, reg) => write!(f, "{:02X} PUSH {:?}", info.opcode, reg),
 
             PrefixCB => Ok(()),
         }

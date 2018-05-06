@@ -15,7 +15,7 @@ pub struct LR35902 {
 impl LR35902 {
     pub fn new() -> Self {
         Self {
-            registers: Registers::new(),
+            registers: Default::default(),
         }
     }
 
@@ -41,9 +41,14 @@ impl LR35902 {
         ((h as u16) << 8) | (l as u16)
     }
 
-    fn push_u8<B: Bus>(&mut self, bus: &mut B, val: u8) {}
+    fn push_u8<B: Bus>(&mut self, _bus: &mut B, val: u8) {
+        println!("!!TODO: push_u8({:#4X})", val);
+    }
 
-    fn push_u16<B: Bus>(&mut self, bus: &mut B, val: u16) {}
+    fn push_u16<B: Bus>(&mut self, bus: &mut B, val: u16) {
+        self.push_u8(bus, (val >> 8) as u8);
+        self.push_u8(bus, val as u8);
+    }
 }
 
 impl InstructionDecoding for LR35902 {
@@ -123,6 +128,24 @@ impl InstructionDecoding for LR35902 {
                 Dst::Reg8(Reg8::A),
                 Src::D8(self.next_u8(bus)),
             ),
+            0x4F => Load(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 4,
+                },
+                Dst::Reg8(Reg8::C),
+                Src::Reg8(Reg8::A),
+            ),
+            0x06 => Load(
+                Info {
+                    opcode: opcode,
+                    byte_length: 2,
+                    cycle_duration: 8,
+                },
+                Dst::Reg8(Reg8::B),
+                Src::D8(self.next_u8(bus)),
+            ),
             0xAF => Xor(
                 Info {
                     opcode: opcode,
@@ -148,6 +171,14 @@ impl InstructionDecoding for LR35902 {
                 },
                 Reg8::C,
             ),
+            0x3C => Inc(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 4,
+                },
+                Reg8::A,
+            ),
             0x77 => Load(
                 Info {
                     opcode: opcode,
@@ -164,6 +195,14 @@ impl InstructionDecoding for LR35902 {
                     cycle_duration: 24,
                 },
                 self.next_u16(bus),
+            ),
+            0xC5 => Push16(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 16,
+                },
+                Reg16::BC,
             ),
             0xE0 => Load(
                 Info {
@@ -188,6 +227,7 @@ impl InstructionDecoding for LR35902 {
         use self::Instruction::*;
 
         match opcode {
+            0x11 => unimplemented!("RL C"),
             0x7C => Bit(
                 Info {
                     opcode: 0x7C,
@@ -234,7 +274,6 @@ where
             Src::D16(val) => val,
             Src::Reg8(reg) => cpu.registers.read8(reg) as u16,
             Src::Reg16(reg) => cpu.registers.read16(reg),
-            _ => unimplemented!("load() src: {:?}", src),
         };
 
         match dst {
@@ -253,7 +292,6 @@ where
                 cpu.registers.write16(reg, addr - 1);
                 bus.write(addr, val as u8)
             }
-            _ => unimplemented!("load() dst: {:?}", dst),
         }
     }
 
@@ -274,10 +312,15 @@ where
         let (cpu, _) = self;
 
         if cond.check(cpu.registers.f) {
-            let pc = cpu.registers.read16(Reg16::PC);
-            cpu.registers
-                .write16(Reg16::PC, pc.wrapping_add(offset as u16));
+            let addr = cpu.registers.read16(Reg16::PC).wrapping_add(offset as u16);
+            cpu.registers.write16(Reg16::PC, addr);
         }
+    }
+
+    fn push16(self, reg: Reg16) {
+        let (cpu, bus) = self;
+        let val = cpu.registers.read16(reg);
+        cpu.push_u16(bus, val)
     }
 
     fn prefix_cb(self) -> Instruction {

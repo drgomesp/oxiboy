@@ -9,6 +9,7 @@ pub trait Ops {
     fn xor(self, Reg8);
     fn call(self, u16);
     fn jr_c(self, JumpCondition, i8);
+    fn push16(self, Reg16);
 
     fn prefix_cb(self) -> Instruction;
 }

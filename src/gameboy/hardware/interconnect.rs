@@ -9,14 +9,14 @@ impl Interconnect {
     pub fn new(bootrom: Box<[u8]>) -> Self {
         Self {
             bootrom: bootrom,
-            vram: vec![0; 8192].into_boxed_slice(),
+            vram: vec![0xFF; 8192].into_boxed_slice(),
         }
     }
 
     fn read_internal(&self, addr: u16) -> u8 {
         match addr {
-            0x00...0xFF => self.bootrom[addr as usize],
-            _ => panic!("Unrecognized read address ${:#x}", addr),
+            0x0000...0xFFFF => self.bootrom[addr as usize],
+            _ => panic!("Unrecognized read address ${:#X}", addr),
         }
     }
 
@@ -26,7 +26,7 @@ impl Interconnect {
                 self.vram[(addr & 0x1FFF) as usize] = val;
             },
             _ => {
-                println!("write_internal(${:#4x}, {:#02X}): not implemented yet: missing relative adddr to physical addr mapping", addr, val)
+                println!("!!TODO: write_internal(${:#4X}, {:#02X}): not implemented yet: missing relative adddr to physical addr mapping", addr, val)
             }
         }
     }
