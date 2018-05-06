@@ -16,12 +16,20 @@ pub struct InstructionInfo {
     pub cycle_duration: usize,
 }
 
-#[derive(Copy, Clone)]
-pub enum Addr {
-    a8,
-    C,
-    HL,
-    HLD,
+#[derive(Copy, Clone, Debug)]
+pub enum Src {
+    D8(u8),
+    D16(u16),
+    Reg8(Reg8),
+    Reg16(Reg16),
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Dst {
+    A8(u8),
+    Reg8(Reg8),
+    Reg16(Reg16),
+    Reg16Dec(Reg16),
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -43,10 +51,7 @@ pub enum Instruction {
     Nop(InstructionInfo),
     Bit(InstructionInfo, usize, Reg8),
     Inc(InstructionInfo, Reg8),
-    Load(InstructionInfo, Addr, Reg8),
-    Load8(InstructionInfo, Reg8, u8),
-    Load8Reg16(InstructionInfo, Reg8, Reg16),
-    Load16(InstructionInfo, Reg16, u16),
+    Load(InstructionInfo, Dst, Src),
     Xor(InstructionInfo, Reg8),
     JumpOn(InstructionInfo, JumpCondition, i8),
 
@@ -61,9 +66,6 @@ impl Instruction {
             Bit(_, bit, reg) => ops.bit(bit, reg),
             Inc(_, reg) => ops.inc(reg),
             Load(_, addr, reg) => ops.load(addr, reg),
-            Load8(_, reg, val) => ops.load8_imm(reg, val),
-            Load8Reg16(_, reg8, reg16) => ops.load16_reg(reg8, reg16),
-            Load16(_, reg, val) => ops.load16_imm(reg, val),
             Xor(_, reg) => ops.xor(reg),
             JumpOn(_, cond, offset) => ops.jr_c(cond, offset),
 
@@ -76,15 +78,30 @@ impl Instruction {
     }
 }
 
-impl fmt::Display for Addr {
+impl fmt::Display for Src {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::Addr::*;
+        use self::Src::*;
 
         match *self {
-            a8 => write!(f, "($FF00+a8)"),
-            C => write!(f, "($FF00+C)"),
-            HL => write!(f, "(HL)"),
-            HLD => write!(f, "(HL-)"),
+            D8(val) => write!(f, "${:#04X}", val),
+            D16(val) => write!(f, "${:#04X}", val),
+            Reg8(reg) => write!(f, "{:?}", reg),
+            Reg16(reg) => write!(f, "({:?})", reg),
+            _ => unimplemented!("display src:{:?}", *self),
+        }
+    }
+}
+
+impl fmt::Display for Dst {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Dst::*;
+
+        match *self {
+            A8(val) => write!(f, "($FF00+${:#04X})", val),
+            Reg8(reg) => write!(f, "{:?}", reg),
+            Reg16(reg) => write!(f, "{:?}", reg),
+            Reg16Dec(reg) => write!(f, "({:?}-)", reg),
+            _ => unimplemented!("display dst:{:?}", *self),
         }
     }
 }
@@ -95,19 +112,12 @@ impl fmt::Display for Instruction {
 
         match *self {
             Nop(_) => Ok(()),
-            Bit(info, bit, reg) => write!(f, "{:#04X} BIT {:?},{:?}", info.opcode, bit, reg),
-            Inc(info, reg) => write!(f, "{:#04X} INC {:?}", info.opcode, reg),
-            Load(info, addr, reg) => match addr {
-                _ => write!(f, "{:#04X} LD {:},{:?}", info.opcode, addr, reg),
-            },
-            Load8(info, reg, val) => write!(f, "{:#04X} LD {:?},${:#04x}", info.opcode, reg, val),
-            Load8Reg16(info, reg8, reg16) => {
-                write!(f, "{:#04X} LD {:?},({:?})", info.opcode, reg8, reg16)
-            }
-            Load16(info, reg, val) => write!(f, "{:#04X} LD {:?},${:#04x}", info.opcode, reg, val),
-            Xor(info, reg) => write!(f, "{:#04X} XOR {:?}", info.opcode, reg),
+            Bit(info, bit, reg) => write!(f, "{:02X} BIT {:?},{:?}", info.opcode, bit, reg),
+            Inc(info, reg) => write!(f, "{:02X} INC {:?}", info.opcode, reg),
+            Load(info, dst, src) => write!(f, "{:02X} LD {:},{:}", info.opcode, dst, src),
+            Xor(info, reg) => write!(f, "{:02X} XOR {:?}", info.opcode, reg),
             JumpOn(info, cond, addr) => {
-                write!(f, "{:#04X} JR {:?},${:#04x}", info.opcode, cond, addr)
+                write!(f, "{:02X} JR {:?},${:#04X}", info.opcode, cond, addr)
             }
 
             PrefixCB => Ok(()),

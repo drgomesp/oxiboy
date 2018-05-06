@@ -47,32 +47,32 @@ impl InstructionDecoding for LR35902 {
         use self::Instruction::*;
 
         match opcode {
-            0x0E => Load8(
+            0x0E => Load(
                 InstructionInfo {
                     opcode: opcode,
                     byte_length: 1,
                     cycle_duration: 8,
                 },
-                Reg8::C,
-                self.next_u8(bus),
+                Dst::Reg8(Reg8::C),
+                Src::D8(self.next_u8(bus)),
             ),
-            0x11 => Load16(
+            0x11 => Load(
                 InstructionInfo {
                     opcode: opcode,
                     byte_length: 3,
                     cycle_duration: 12,
                 },
-                Reg16::DE,
-                self.next_u16(bus),
+                Dst::Reg16(Reg16::DE),
+                Src::D16(self.next_u16(bus)),
             ),
-            0x1A => Load8Reg16(
+            0x1A => Load(
                 InstructionInfo {
                     opcode: opcode,
                     byte_length: 1,
                     cycle_duration: 8,
                 },
-                Reg8::A,
-                Reg16::DE,
+                Dst::Reg8(Reg8::A),
+                Src::Reg16(Reg16::DE),
             ),
             0x20 => JumpOn(
                 InstructionInfo {
@@ -83,23 +83,23 @@ impl InstructionDecoding for LR35902 {
                 JumpCondition::NZ,
                 self.next_u8(bus) as i8,
             ),
-            0x21 => Load16(
+            0x21 => Load(
                 InstructionInfo {
                     opcode: opcode,
                     byte_length: 3,
                     cycle_duration: 12,
                 },
-                Reg16::HL,
-                self.next_u16(bus),
+                Dst::Reg16(Reg16::HL),
+                Src::D16(self.next_u16(bus)),
             ),
-            0x31 => Load16(
+            0x31 => Load(
                 InstructionInfo {
                     opcode: opcode,
                     byte_length: 3,
                     cycle_duration: 12,
                 },
-                Reg16::SP,
-                self.next_u16(bus),
+                Dst::Reg16(Reg16::SP),
+                Src::D16(self.next_u16(bus)),
             ),
             0x32 => Load(
                 InstructionInfo {
@@ -107,17 +107,17 @@ impl InstructionDecoding for LR35902 {
                     byte_length: 1,
                     cycle_duration: 8,
                 },
-                Addr::HLD,
-                Reg8::A,
+                Dst::Reg16Dec(Reg16::HL),
+                Src::Reg8(Reg8::A),
             ),
-            0x3E => Load8(
+            0x3E => Load(
                 InstructionInfo {
                     opcode: opcode,
                     byte_length: 1,
                     cycle_duration: 8,
                 },
-                Reg8::A,
-                self.next_u8(bus),
+                Dst::Reg8(Reg8::A),
+                Src::D8(self.next_u8(bus)),
             ),
             0xAF => Xor(
                 InstructionInfo {
@@ -133,8 +133,8 @@ impl InstructionDecoding for LR35902 {
                     byte_length: 1,
                     cycle_duration: 8,
                 },
-                Addr::C,
-                Reg8::A,
+                Dst::Reg8(Reg8::C),
+                Src::Reg8(Reg8::A),
             ),
             0x0C => Inc(
                 InstructionInfo {
@@ -150,8 +150,8 @@ impl InstructionDecoding for LR35902 {
                     byte_length: 1,
                     cycle_duration: 8,
                 },
-                Addr::HL,
-                Reg8::A,
+                Dst::Reg16(Reg16::HL),
+                Src::Reg8(Reg8::A),
             ),
             0xE0 => Load(
                 InstructionInfo {
@@ -159,8 +159,8 @@ impl InstructionDecoding for LR35902 {
                     byte_length: 2,
                     cycle_duration: 12,
                 },
-                Addr::a8,
-                Reg8::A,
+                Dst::A8(self.next_u8(bus)),
+                Src::Reg8(Reg8::A),
             ),
             0xCB => PrefixCB,
             0x00 => Nop(InstructionInfo {
@@ -168,7 +168,7 @@ impl InstructionDecoding for LR35902 {
                 byte_length: 1,
                 cycle_duration: 4,
             }),
-            _ => panic!("unrecognized opcode: {:#04X}", opcode),
+            _ => panic!("unrecognized opcode: {:02X}", opcode),
         }
     }
 
@@ -185,7 +185,7 @@ impl InstructionDecoding for LR35902 {
                 7,
                 Reg8::H,
             ),
-            _ => panic!("Unrecognized cb opcode: {:#04X}", opcode),
+            _ => panic!("Unrecognized cb opcode: {:02X}", opcode),
         }
     }
 }
@@ -214,37 +214,31 @@ where
         cpu.registers.write8(reg, val.wrapping_add(1))
     }
 
-    fn load(self, addr: Addr, reg: Reg8) {
+    fn load(self, dst: Dst, src: Src) {
         let (cpu, bus) = self;
-        use self::instructions::Addr::*;
 
-        let indirect_addr = match addr {
-            a8 => (0xFF00u16 | cpu.next_u8(bus) as u16) as u16,
-            C => (0xFF00u16 | cpu.registers.read8(Reg8::C) as u16) as u16,
-            HL => cpu.registers.read16(Reg16::HL),
-            HLD => {
-                let addr = cpu.registers.read16(Reg16::HL);
-                cpu.registers.write16(Reg16::HL, addr - 1);
-                addr
-            }
-            _ => unimplemented!(),
+        let val: u16 = match src {
+            Src::D8(val) => val as u16,
+            Src::D16(val) => val,
+            Src::Reg8(reg) => cpu.registers.read8(reg) as u16,
+            Src::Reg16(reg) => cpu.registers.read16(reg),
+            _ => unimplemented!("load() src: {:?}, dst: {:?}", src, dst),
         };
 
-        bus.write(indirect_addr, cpu.registers.read8(reg));
-    }
-
-    fn load8_imm(self, reg: Reg8, val: u8) {
-        let (cpu, _) = self;
-        cpu.registers.write8(reg, val);
-    }
-
-    fn load16_reg(self, reg8: Reg8, reg16: Reg16) {
-        println!("load16_reg({:?},{:?})", reg8, reg16);
-    }
-
-    fn load16_imm(self, reg: Reg16, val: u16) {
-        let (cpu, _) = self;
-        cpu.registers.write16(reg, val);
+        match dst {
+            Dst::A8(val) => {
+                let addr = (0xFF00u16 | val as u16) as u16;
+                bus.write(addr, cpu.registers.read8(Reg8::A))
+            }
+            Dst::Reg8(reg) => cpu.registers.write8(reg, val as u8),
+            Dst::Reg16(reg) => cpu.registers.write16(reg, val),
+            Dst::Reg16Dec(reg) => {
+                let addr = cpu.registers.read16(reg);
+                cpu.registers.write16(reg, addr - 1);
+                bus.write(addr, val as u8)
+            }
+            _ => unimplemented!("load() dst: {:?}", dst),
+        }
     }
 
     fn xor(self, reg: Reg8) {
