@@ -10,6 +10,7 @@ pub trait Ops {
     fn xor(self, Reg8);
     fn call(self, u16);
     fn jr_c(self, JumpCondition, i8);
+    fn ret(self, u16);
     fn push16(self, Reg16);
     fn pop16(self, Reg16);
     fn rl(self, Reg8);

@@ -14,8 +14,8 @@ impl Interconnect {
     }
 
     fn read_internal(&self, addr: u16) -> u8 {
-        match addr {
-            0x0000...0xFFFF => self.bootrom[addr as usize],
+        match addr & 0xF000 {
+            0x00...0xFF => self.bootrom[addr as usize],
             _ => panic!("Unrecognized read address ${:#X}", addr),
         }
     }

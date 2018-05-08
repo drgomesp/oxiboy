@@ -41,8 +41,10 @@ impl LR35902 {
         ((h as u16) << 8) | (l as u16)
     }
 
-    fn push_u8<B: Bus>(&mut self, _bus: &mut B, val: u8) {
-        println!("!!TODO: push_u8({:#4X})", val);
+    fn push_u8<B: Bus>(&mut self, bus: &mut B, val: u8) {
+        let sp = self.registers.read16(Reg16::SP);
+        self.registers.write16(Reg16::SP, sp.wrapping_add(1));
+        bus.write(self.registers.read16(Reg16::SP), val)
     }
 
     fn push_u16<B: Bus>(&mut self, bus: &mut B, val: u16) {
@@ -51,8 +53,10 @@ impl LR35902 {
     }
 
     fn pop_u8<B: Bus>(&mut self, bus: &mut B) -> u8 {
-        println!("!!TODO: pop_u8()");
-        0
+        let sp = self.registers.read16(Reg16::SP);
+        let val = bus.read(sp);
+        self.registers.write16(Reg16::SP, sp.wrapping_add(1));
+        val
     }
 
     fn pop_u16<B: Bus>(&mut self, bus: &mut B) -> u16 {
@@ -248,6 +252,14 @@ impl InstructionDecoding for LR35902 {
                 },
                 Reg16::BC,
             ),
+            0xC9 => Ret(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 16,
+                },
+                self.pop_u16(bus),
+            ),
             0xE0 => Load(
                 Info {
                     opcode: opcode,
@@ -403,6 +415,11 @@ where
             let addr = cpu.registers.read16(Reg16::PC).wrapping_add(offset as u16);
             cpu.registers.write16(Reg16::PC, addr);
         }
+    }
+
+    fn ret(self, addr: u16) {
+        let (cpu, _) = self;
+        cpu.registers.write16(Reg16::PC, addr);
     }
 
     fn push16(self, reg: Reg16) {
