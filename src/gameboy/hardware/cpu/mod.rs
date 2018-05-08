@@ -227,10 +227,17 @@ impl InstructionDecoding for LR35902 {
         use self::Instruction::*;
 
         match opcode {
-            0x11 => unimplemented!("RL C"),
+            0x11 => RotateLeftCarry(
+                Info {
+                    opcode: opcode,
+                    byte_length: 2,
+                    cycle_duration: 8,
+                },
+                Reg8::C,
+            ),
             0x7C => Bit(
                 Info {
-                    opcode: 0x7C,
+                    opcode: opcode,
                     byte_length: 2,
                     cycle_duration: 8,
                 },
@@ -252,11 +259,22 @@ where
         let (cpu, _) = self;
         let val = cpu.registers.read8(reg) & (1 << bit);
 
-        cpu.registers.f = if val == 0 {
-            Flags::ZERO
-        } else {
-            Flags::empty()
-        } | Flags::HALF_CARRY & cpu.registers.f;
+        cpu.registers.f = Flags::ZERO.self_or_empty(val == 0) | Flags::HALF_CARRY & cpu.registers.f;
+    }
+
+    fn rl(self, reg: Reg8) {
+        let (cpu, _) = self;
+
+        let flags = cpu.registers.f;
+        let rv = cpu.registers.read8(reg);
+        let cv = if flags.contains(Flags::CARRY) { 1 } else { 0 };
+
+        let ncv = rv & 0x80;
+        let nrv = (rv << 1) | cv;
+
+        cpu.registers.write8(reg, nrv);
+        cpu.registers.f =
+            Flags::ZERO.self_or_empty(nrv == 0) | Flags::CARRY.self_or_empty(ncv != 0);
     }
 
     fn inc(self, reg: Reg8) {

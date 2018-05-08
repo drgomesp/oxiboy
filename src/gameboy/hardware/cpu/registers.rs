@@ -9,6 +9,16 @@ bitflags!(
   }
 );
 
+impl Flags {
+    pub fn self_or_empty(&self, test: bool) -> Flags {
+        if test {
+            *self
+        } else {
+            Flags::empty()
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum Reg8 {
     A,
