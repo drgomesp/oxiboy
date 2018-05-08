@@ -76,6 +76,14 @@ impl InstructionDecoding for LR35902 {
                 Dst::Reg8(Reg8::C),
                 Src::D8(self.next_u8(bus)),
             ),
+            0x05 => Dec(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 4,
+                },
+                Reg8::B,
+            ),
             0x11 => Load(
                 Info {
                     opcode: opcode,
@@ -112,6 +120,14 @@ impl InstructionDecoding for LR35902 {
                 Dst::Reg16(Reg16::HL),
                 Src::D16(self.next_u16(bus)),
             ),
+            0x23 => Inc16(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 8,
+                },
+                Reg16::HL,
+            ),
             0x31 => Load(
                 Info {
                     opcode: opcode,
@@ -120,6 +136,15 @@ impl InstructionDecoding for LR35902 {
                 },
                 Dst::Reg16(Reg16::SP),
                 Src::D16(self.next_u16(bus)),
+            ),
+            0x22 => Load(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 8,
+                },
+                Dst::Reg16Inc(Reg16::HL),
+                Src::Reg8(Reg8::A),
             ),
             0x32 => Load(
                 Info {
@@ -303,11 +328,25 @@ where
             Flags::ZERO.self_or_empty(nrv == 0) | Flags::CARRY.self_or_empty(ncv != 0);
     }
 
+    fn dec(self, reg: Reg8) {
+        let (cpu, _) = self;
+        let val = cpu.registers.read8(reg);
+
+        cpu.registers.write8(reg, val.wrapping_sub(1));
+    }
+
     fn inc(self, reg: Reg8) {
         let (cpu, _) = self;
         let val = cpu.registers.read8(reg);
 
         cpu.registers.write8(reg, val.wrapping_add(1));
+    }
+
+    fn inc16(self, reg: Reg16) {
+        let (cpu, _) = self;
+        let val = cpu.registers.read16(reg);
+
+        cpu.registers.write16(reg, val.wrapping_add(1));
     }
 
     fn load(self, dst: Dst, src: Src) {
@@ -331,9 +370,14 @@ where
                 bus.write(addr, cpu.registers.read8(Reg8::A))
             }
             Dst::Reg16(reg) => cpu.registers.write16(reg, val),
+            Dst::Reg16Inc(reg) => {
+                let addr = cpu.registers.read16(reg);
+                cpu.registers.write16(reg, addr.wrapping_add(1));
+                bus.write(addr, val as u8)
+            }
             Dst::Reg16Dec(reg) => {
                 let addr = cpu.registers.read16(reg);
-                cpu.registers.write16(reg, addr - 1);
+                cpu.registers.write16(reg, addr.wrapping_sub(1));
                 bus.write(addr, val as u8)
             }
         };

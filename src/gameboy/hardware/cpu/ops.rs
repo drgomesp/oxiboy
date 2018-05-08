@@ -4,6 +4,7 @@ use super::registers::{Reg16, Reg8};
 pub trait Ops {
     fn nop(self);
     fn bit(self, usize, Reg8);
+    fn dec(self, Reg8);
     fn inc(self, Reg8);
     fn load(self, Dst, Src);
     fn xor(self, Reg8);
@@ -12,6 +13,7 @@ pub trait Ops {
     fn push16(self, Reg16);
     fn pop16(self, Reg16);
     fn rl(self, Reg8);
+    fn inc16(self, Reg16);
 
     fn prefix_cb(self) -> Instruction;
 }

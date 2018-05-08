@@ -30,6 +30,7 @@ pub enum Dst {
     Reg8(Reg8),
     PagedReg8(Reg8),
     Reg16(Reg16),
+    Reg16Inc(Reg16),
     Reg16Dec(Reg16),
 }
 
@@ -51,6 +52,7 @@ impl JumpCondition {
 pub enum Instruction {
     Nop(Info),
     Bit(Info, usize, Reg8),
+    Dec(Info, Reg8),
     Inc(Info, Reg8),
     Load(Info, Dst, Src),
     Xor(Info, Reg8),
@@ -60,6 +62,7 @@ pub enum Instruction {
     Pop16(Info, Reg16),
     RL(Info, Reg8),
     RLA(Info),
+    Inc16(Info, Reg16),
 
     PrefixCB,
 }
@@ -70,6 +73,7 @@ impl Instruction {
 
         match self {
             Bit(_, bit, reg) => ops.bit(bit, reg),
+            Dec(_, reg) => ops.dec(reg),
             Inc(_, reg) => ops.inc(reg),
             Load(_, addr, reg) => ops.load(addr, reg),
             Xor(_, reg) => ops.xor(reg),
@@ -79,6 +83,7 @@ impl Instruction {
             Pop16(_, reg) => ops.pop16(reg),
             RL(_, reg) => ops.rl(reg),
             RLA(_) => ops.rl(Reg8::A),
+            Inc16(_, reg) => ops.inc16(reg),
 
             PrefixCB => return ops.prefix_cb(),
 
@@ -111,6 +116,7 @@ impl fmt::Display for Dst {
             Reg8(reg) => write!(f, "{:?}", reg),
             PagedReg8(reg) => write!(f, "($FF00+{:?})", reg),
             Reg16(reg) => write!(f, "{:?}", reg),
+            Reg16Inc(reg) => write!(f, "({:?}+)", reg),
             Reg16Dec(reg) => write!(f, "({:?}-)", reg),
         }
     }
@@ -123,7 +129,9 @@ impl fmt::Display for Instruction {
         match *self {
             Nop(_) => Ok(()),
             Bit(info, bit, reg) => write!(f, "{:02X} BIT {:?},{:?}", info.opcode, bit, reg),
+            Dec(info, reg) => write!(f, "{:02X} DEC {:?}", info.opcode, reg),
             Inc(info, reg) => write!(f, "{:02X} INC {:?}", info.opcode, reg),
+            Inc16(info, reg) => write!(f, "{:02X} INC {:?}", info.opcode, reg),
             Load(info, dst, src) => write!(f, "{:02X} LD {:},{:}", info.opcode, dst, src),
             Xor(info, reg) => write!(f, "{:02X} XOR {:?}", info.opcode, reg),
             Call(info, addr) => write!(f, "{:02X} CALL ${:#06X}", info.opcode, addr),
