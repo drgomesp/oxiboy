@@ -49,6 +49,17 @@ impl LR35902 {
         self.push_u8(bus, (val >> 8) as u8);
         self.push_u8(bus, val as u8);
     }
+
+    fn pop_u8<B: Bus>(&mut self, bus: &mut B) -> u8 {
+        println!("!!TODO: pop_u8()");
+        0
+    }
+
+    fn pop_u16<B: Bus>(&mut self, bus: &mut B) -> u16 {
+        let h = self.pop_u8(bus);
+        let l = self.pop_u8(bus);
+        ((h as u16) << 8 | (l as u16))
+    }
 }
 
 impl InstructionDecoding for LR35902 {
@@ -188,6 +199,14 @@ impl InstructionDecoding for LR35902 {
                 Dst::Reg16(Reg16::HL),
                 Src::Reg8(Reg8::A),
             ),
+            0xC1 => Pop16(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 12,
+                },
+                Reg16::BC,
+            ),
             0xCD => Call(
                 Info {
                     opcode: opcode,
@@ -213,6 +232,11 @@ impl InstructionDecoding for LR35902 {
                 Dst::A8(self.next_u8(bus)),
                 Src::Reg8(Reg8::A),
             ),
+            0x17 => RLA(Info {
+                opcode: opcode,
+                byte_length: 1,
+                cycle_duration: 4,
+            }),
             0xCB => PrefixCB,
             0x00 => Nop(Info {
                 opcode: 0x00,
@@ -227,7 +251,7 @@ impl InstructionDecoding for LR35902 {
         use self::Instruction::*;
 
         match opcode {
-            0x11 => RotateLeftCarry(
+            0x11 => RL(
                 Info {
                     opcode: opcode,
                     byte_length: 2,
@@ -253,7 +277,9 @@ impl<'a, B> Ops for (&'a mut LR35902, &'a mut B)
 where
     B: Bus,
 {
-    fn nop(self) {}
+    fn nop(self) {
+        unimplemented!();
+    }
 
     fn bit(self, bit: usize, reg: Reg8) {
         let (cpu, _) = self;
@@ -281,7 +307,7 @@ where
         let (cpu, _) = self;
         let val = cpu.registers.read8(reg);
 
-        cpu.registers.write8(reg, val.wrapping_add(1))
+        cpu.registers.write8(reg, val.wrapping_add(1));
     }
 
     fn load(self, dst: Dst, src: Src) {
@@ -310,13 +336,13 @@ where
                 cpu.registers.write16(reg, addr - 1);
                 bus.write(addr, val as u8)
             }
-        }
+        };
     }
 
     fn xor(self, reg: Reg8) {
         let (cpu, _) = self;
         let v = cpu.registers.read8(reg);
-        cpu.registers.write8(reg, v ^ v)
+        cpu.registers.write8(reg, v ^ v);
     }
 
     fn call(self, addr: u16) {
@@ -338,7 +364,13 @@ where
     fn push16(self, reg: Reg16) {
         let (cpu, bus) = self;
         let val = cpu.registers.read16(reg);
-        cpu.push_u16(bus, val)
+        cpu.push_u16(bus, val);
+    }
+
+    fn pop16(self, reg: Reg16) {
+        let (cpu, bus) = self;
+        let val = cpu.pop_u16(bus);
+        cpu.registers.write16(reg, val);
     }
 
     fn prefix_cb(self) -> Instruction {

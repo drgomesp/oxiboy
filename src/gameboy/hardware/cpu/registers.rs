@@ -118,7 +118,10 @@ impl Registers {
 
         match reg {
             AF => unimplemented!(),
-            BC => unimplemented!(),
+            BC => {
+                (self.b = (val >> 8) as u8);
+                self.c = val as u8;
+            }
             DE => {
                 (self.d = (val >> 8) as u8);
                 self.e = val as u8;

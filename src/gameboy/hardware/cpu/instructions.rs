@@ -57,7 +57,9 @@ pub enum Instruction {
     Call(Info, u16),
     JumpOn(Info, JumpCondition, i8),
     Push16(Info, Reg16),
-    RotateLeftCarry(Info, Reg8),
+    Pop16(Info, Reg16),
+    RL(Info, Reg8),
+    RLA(Info),
 
     PrefixCB,
 }
@@ -74,7 +76,9 @@ impl Instruction {
             Call(_, addr) => ops.call(addr),
             JumpOn(_, cond, offset) => ops.jr_c(cond, offset),
             Push16(_, reg) => ops.push16(reg),
-            RotateLeftCarry(_, reg) => ops.rl(reg),
+            Pop16(_, reg) => ops.pop16(reg),
+            RL(_, reg) => ops.rl(reg),
+            RLA(_) => ops.rl(Reg8::A),
 
             PrefixCB => return ops.prefix_cb(),
 
@@ -125,7 +129,9 @@ impl fmt::Display for Instruction {
             Call(info, addr) => write!(f, "{:02X} CALL ${:#06X}", info.opcode, addr),
             JumpOn(info, cd, addr) => write!(f, "{:02X} JR {:?},${:#04X}", info.opcode, cd, addr),
             Push16(info, reg) => write!(f, "{:02X} PUSH {:?}", info.opcode, reg),
-            RotateLeftCarry(info, reg) => write!(f, "{:02X} RL {:?}", info.opcode, reg),
+            Pop16(info, reg) => write!(f, "{:02X} POP {:?}", info.opcode, reg),
+            RL(info, reg) => write!(f, "{:02X} RL {:?}", info.opcode, reg),
+            RLA(info) => write!(f, "{:02X} RLA", info.opcode),
 
             PrefixCB => Ok(()),
         }
