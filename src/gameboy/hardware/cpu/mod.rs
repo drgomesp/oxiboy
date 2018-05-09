@@ -97,6 +97,14 @@ impl InstructionDecoding for LR35902 {
                 Dst::Reg16(Reg16::DE),
                 Src::D16(self.next_u16(bus)),
             ),
+            0x13 => Inc16(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 8,
+                },
+                Reg16::DE,
+            ),
             0x1A => Load(
                 Info {
                     opcode: opcode,
@@ -218,6 +226,15 @@ impl InstructionDecoding for LR35902 {
                     cycle_duration: 4,
                 },
                 Reg8::A,
+            ),
+            0x7B => Load(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 4,
+                },
+                Dst::Reg8(Reg8::A),
+                Src::Reg8(Reg8::E),
             ),
             0x77 => Load(
                 Info {
