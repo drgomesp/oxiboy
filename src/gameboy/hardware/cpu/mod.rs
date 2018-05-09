@@ -314,9 +314,7 @@ impl<'a, B> Ops for (&'a mut LR35902, &'a mut B)
 where
     B: Bus,
 {
-    fn nop(self) {
-        unimplemented!();
-    }
+    fn nop(self) {}
 
     fn bit(self, bit: usize, reg: Reg8) {
         let (cpu, _) = self;
