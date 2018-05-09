@@ -43,7 +43,7 @@ impl LR35902 {
 
     fn push_u8<B: Bus>(&mut self, bus: &mut B, val: u8) {
         let sp = self.registers.read16(Reg16::SP);
-        self.registers.write16(Reg16::SP, sp.wrapping_add(1));
+        self.registers.write16(Reg16::SP, sp.wrapping_sub(1));
         bus.write(self.registers.read16(Reg16::SP), val)
     }
 
@@ -60,8 +60,8 @@ impl LR35902 {
     }
 
     fn pop_u16<B: Bus>(&mut self, bus: &mut B) -> u16 {
-        let h = self.pop_u8(bus);
         let l = self.pop_u8(bus);
+        let h = self.pop_u8(bus);
         ((h as u16) << 8 | (l as u16))
     }
 }
@@ -314,7 +314,9 @@ impl<'a, B> Ops for (&'a mut LR35902, &'a mut B)
 where
     B: Bus,
 {
-    fn nop(self) {}
+    fn nop(self) {
+        panic!("nop");
+    }
 
     fn bit(self, bit: usize, reg: Reg8) {
         let (cpu, _) = self;

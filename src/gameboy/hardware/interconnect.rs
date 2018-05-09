@@ -4,6 +4,7 @@ pub struct Interconnect {
     bootrom: Box<[u8]>,
     vram: Box<[u8]>,
     wram: Box<[u8]>,
+    hram: Box<[u8]>,
 }
 
 impl Interconnect {
@@ -12,33 +13,35 @@ impl Interconnect {
             bootrom: bootrom,
             vram: vec![0xFF; 8192].into_boxed_slice(),
             wram: vec![0xFF; 8192].into_boxed_slice(),
+            hram: vec![0xFF; 127].into_boxed_slice(),
         }
     }
 
     fn read_internal(&self, addr: u16) -> u8 {
-        match addr & 0xF000 {
-            0x00...0xFF => {
-                println!("- reading at addr: ${:#06X}", addr);
-                self.bootrom[addr as usize]
-            }
-            0x8000...0x9FFF => self.vram[(addr & 0x1FFF) as usize],
-            0xC000...0xDFFF => self.wram[(addr & 0x1FFF) as usize], // TODO handle bank switching?
+        match addr {
+            0x0...0xFF => self.bootrom[addr as usize],
             0x0100...0x7FFF => {
-                unimplemented!("time to map the cartdrige data! o/")
+                println!("time to map the cartdrige data! o/");
+                0
             }
+            0x8000...0x9FFF => self.vram[(addr - 0x8000) as usize],
+            0xC000...0xDFFF => self.wram[(addr - 0xC000) as usize],
+            0xFF80...0xFFFE => self.hram[(addr - 0xFF80) as usize],
+
             _ => panic!("Unrecognized read address ${:#X}", addr),
         }
     }
 
     fn write_internal(&mut self, addr: u16, val: u8) {
-        match addr & 0xF000 {
+        match addr {
             0x8000...0x9FFF => {
-                self.vram[(addr & 0x1FFF) as usize] = val;
+                self.vram[(addr - 0x8000) as usize] = val;
             },
             0xC000...0xDFFF => {
-                self.wram[(addr & 0x1FFF) as usize] = val;
+                self.wram[(addr - 0xC000) as usize] = val;
             },
-            0x0100 ... 0x7FFF => println!("-- writing cartdrige mem val:{:#04X} addr: ${:#06X}", val, addr & 0x1FFF),
+            0xFF80...0xFFFE => self.hram[(addr - 0xFF80) as usize] = val,
+            0x0100...0x7FFF => println!("-- writing cartdrige mem val:{:#04X} addr: ${:#06X}", val, addr & 0x1FFF),
             _ => {
                 println!("!!TODO: write_internal(${:#04X}, {:#02X}): not implemented yet: missing relative adddr to physical addr mapping", addr >> 8, val)
             }
