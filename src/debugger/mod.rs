@@ -24,13 +24,21 @@ impl Debugger {
                 print!("oxiboy> ");
                 stdout().flush().unwrap();
 
+                use self::Command::*;
                 match read_stdin().parse() {
-                    Ok(Command::Continue) => {
+                    Ok(Breakpoint) => {
+                        let addr = read_stdin().parse::<u16>().unwrap();
+
+                        while (self.gb.pc() != addr) {
+                            self.gb.step()
+                        }
+                    }
+                    Ok(Continue) => {
                         self.debug = false;
                         self.gb.step()
                     }
-                    Ok(Command::Step) => self.gb.step(),
-                    Ok(Command::DumpRegisters) => println!("{}", self.gb.cpu.registers),
+                    Ok(Step) => self.gb.step(),
+                    Ok(DumpRegisters) => println!("{}", self.gb.cpu.registers),
                     _ => println!("invalid input"),
                 };
             } else {
