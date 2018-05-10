@@ -7,6 +7,8 @@ authors = ["Daniel Ribeiro <drgomesp@gmail.com>"]
 bitflags = "*"
 clippy = {version = "0.0.21", optional = true}
 failure = "*"
+simplelog = "*"
+log = "*"
 
 [features]
 default = []

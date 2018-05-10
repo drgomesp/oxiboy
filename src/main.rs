@@ -1,14 +1,3 @@
-#![deny(
-//    missing_docs,
-    missing_debug_implementations,
-    missing_copy_implementations,
-    trivial_casts,
-    trivial_numeric_casts,
-    unsafe_code,
-    unstable_features,
-    unused_import_braces,
-    unused_qualifications
-)]
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 #![cfg_attr(feature = "dev", feature(plugin))]
 #![cfg_attr(feature = "dev", plugin(clippy))]
@@ -16,9 +5,13 @@
 #[macro_use]
 extern crate bitflags;
 extern crate failure;
+extern crate log;
+extern crate simplelog;
 
 mod debugger;
-mod emulation;
+
+use log::LevelFilter;
+use simplelog::{CombinedLogger, Config, TermLogger};
 mod gameboy;
 
 use gameboy::GameBoy;
@@ -31,6 +24,11 @@ use std::io::Read;
 use std::path::Path;
 
 fn main() {
+    CombinedLogger::init(vec![
+        TermLogger::new(LevelFilter::Debug, Config::default()).unwrap()
+    ])
+    .unwrap();
+
     let bootrom_file_name = env::args().nth(1).unwrap();
     let bootrom = read_bin(bootrom_file_name);
 
