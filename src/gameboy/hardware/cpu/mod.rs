@@ -105,6 +105,14 @@ impl InstructionDecoding for LR35902 {
                 },
                 Reg16::DE,
             ),
+            0x18 => Jump(
+                Info {
+                    opcode: opcode,
+                    byte_length: 2,
+                    cycle_duration: 12,
+                },
+                self.next_u8(bus) as i8,
+            ),
             0x1A => Load(
                 Info {
                     opcode: opcode,
@@ -113,6 +121,24 @@ impl InstructionDecoding for LR35902 {
                 },
                 Dst::Reg8(Reg8::A),
                 Src::Reg16(Reg16::DE),
+            ),
+            0x57 => Load(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 4,
+                },
+                Dst::Reg8(Reg8::D),
+                Src::Reg8(Reg8::A),
+            ),
+            0x67 => Load(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 4,
+                },
+                Dst::Reg8(Reg8::H),
+                Src::Reg8(Reg8::A),
             ),
             0x20 => JumpOn(
                 Info {
@@ -167,6 +193,14 @@ impl InstructionDecoding for LR35902 {
                 Dst::Reg16Dec(Reg16::HL),
                 Src::Reg8(Reg8::A),
             ),
+            0x3D => Dec(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 4,
+                },
+                Reg8::A,
+            ),
             0x3E => Load(
                 Info {
                     opcode: opcode,
@@ -202,6 +236,15 @@ impl InstructionDecoding for LR35902 {
                 },
                 Reg8::A,
             ),
+            0x1E => Load(
+                Info {
+                    opcode: opcode,
+                    byte_length: 2,
+                    cycle_duration: 8,
+                },
+                Dst::Reg8(Reg8::E),
+                Src::D8(self.next_u8(bus)),
+            ),
             0xE2 => Load(
                 Info {
                     opcode: opcode,
@@ -211,6 +254,14 @@ impl InstructionDecoding for LR35902 {
                 Dst::PagedReg8(Reg8::C),
                 Src::Reg8(Reg8::A),
             ),
+            0x04 => Inc(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 4,
+                },
+                Reg8::B,
+            ),
             0x0C => Inc(
                 Info {
                     opcode: opcode,
@@ -218,6 +269,23 @@ impl InstructionDecoding for LR35902 {
                     cycle_duration: 4,
                 },
                 Reg8::C,
+            ),
+            0x0D => Dec(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 4,
+                },
+                Reg8::C,
+            ),
+            0x28 => JumpOn(
+                Info {
+                    opcode: opcode,
+                    byte_length: 2,
+                    cycle_duration: 12,
+                },
+                JumpCondition::Z,
+                self.next_u8(bus) as i8,
             ),
             0x3C => Inc(
                 Info {
@@ -277,6 +345,24 @@ impl InstructionDecoding for LR35902 {
                 },
                 self.pop_u16(bus),
             ),
+            0xEA => Load(
+                Info {
+                    opcode: opcode,
+                    byte_length: 3,
+                    cycle_duration: 16,
+                },
+                Dst::Addr(self.next_u16(bus)),
+                Src::Reg8(Reg8::A),
+            ),
+            0x2E => Load(
+                Info {
+                    opcode: opcode,
+                    byte_length: 2,
+                    cycle_duration: 12,
+                },
+                Dst::Reg8(Reg8::L),
+                Src::D8(self.next_u8(bus)),
+            ),
             0xE0 => Load(
                 Info {
                     opcode: opcode,
@@ -286,11 +372,22 @@ impl InstructionDecoding for LR35902 {
                 Dst::A8(self.next_u8(bus)),
                 Src::Reg8(Reg8::A),
             ),
-            0x17 => RLA(Info {
-                opcode: opcode,
-                byte_length: 1,
-                cycle_duration: 4,
-            }),
+            0xFE => Compare(
+                Info {
+                    opcode: opcode,
+                    byte_length: 2,
+                    cycle_duration: 8,
+                },
+                self.next_u8(bus),
+            ),
+            0x17 => RotateLeftAkku(
+                Info {
+                    opcode: opcode,
+                    byte_length: 1,
+                    cycle_duration: 4,
+                },
+                false,
+            ),
             0xCB => PrefixCB,
             0x00 => Nop(Info {
                 opcode: 0x00,
@@ -305,13 +402,14 @@ impl InstructionDecoding for LR35902 {
         use self::Instruction::*;
 
         match opcode {
-            0x11 => RL(
+            0x11 => RotateLeft(
                 Info {
                     opcode: opcode,
                     byte_length: 2,
                     cycle_duration: 8,
                 },
                 Reg8::C,
+                true,
             ),
             0x7C => Bit(
                 Info {
@@ -332,43 +430,58 @@ where
     B: Bus,
 {
     fn nop(self) {
-        panic!("nop");
+        println!("nop");
     }
 
     fn bit(self, bit: usize, reg: Reg8) {
         let (cpu, _) = self;
         let val = cpu.registers.read8(reg) & (1 << bit);
 
-        cpu.registers.f = Flags::ZERO.self_or_empty(val == 0) | Flags::HALF_CARRY & cpu.registers.f;
+        cpu.registers.f = Flags::ZERO.self_or_empty(val == 0) | Flags::HALF_CARRY
+            | (Flags::CARRY & cpu.registers.f);
     }
 
-    fn rl(self, reg: Reg8) {
+    fn rl(self, reg: Reg8, set_zero: bool) {
         let (cpu, _) = self;
 
-        let flags = cpu.registers.f;
-        let rv = cpu.registers.read8(reg);
-        let cv = if flags.contains(Flags::CARRY) { 1 } else { 0 };
+        let reg_val = cpu.registers.read8(reg);
+        let carry_val = if cpu.registers.f.contains(Flags::CARRY) {
+            1
+        } else {
+            0
+        };
 
-        let ncv = rv & 0x80;
-        let nrv = (rv << 1) | cv;
+        let new_carry_val = reg_val & 0x80;
+        let new_reg_val = (reg_val << 1) | carry_val;
 
-        cpu.registers.write8(reg, nrv);
-        cpu.registers.f =
-            Flags::ZERO.self_or_empty(nrv == 0) | Flags::CARRY.self_or_empty(ncv != 0);
+        cpu.registers.f = Flags::ZERO.self_or_empty(set_zero && new_reg_val == 0)
+            | Flags::CARRY.self_or_empty(new_carry_val != 0);
+
+        cpu.registers.write8(reg, new_reg_val);
     }
 
     fn dec(self, reg: Reg8) {
         let (cpu, _) = self;
         let val = cpu.registers.read8(reg);
+        let new_val = val.wrapping_sub(1);
 
-        cpu.registers.write8(reg, val.wrapping_sub(1));
+        cpu.registers.f = Flags::ZERO.self_or_empty(new_val == 0) | Flags::ADD_SUB
+            | Flags::HALF_CARRY.self_or_empty(val & 0xf == 0)
+            | (Flags::CARRY & cpu.registers.f);
+
+        cpu.registers.write8(reg, new_val);
     }
 
     fn inc(self, reg: Reg8) {
         let (cpu, _) = self;
         let val = cpu.registers.read8(reg);
+        let new_value = val.wrapping_add(1);
 
-        cpu.registers.write8(reg, val.wrapping_add(1));
+        cpu.registers.f = Flags::ZERO.self_or_empty(new_value == 0)
+            | Flags::HALF_CARRY.self_or_empty(val & 0xf == 0xf)
+            | (Flags::CARRY & cpu.registers.f);
+
+        cpu.registers.write8(reg, new_value);
     }
 
     fn inc16(self, reg: Reg16) {
@@ -376,6 +489,22 @@ where
         let val = cpu.registers.read16(reg);
 
         cpu.registers.write16(reg, val.wrapping_add(1));
+    }
+
+    fn sub(self, val: u8) {
+        let (cpu, _) = self;
+        let carry_val = if false && cpu.registers.f.contains(Flags::CARRY) {
+            1
+        } else {
+            0
+        };
+
+        let reg_val = cpu.registers.read8(Reg8::A);
+        let sub_res = reg_val.wrapping_sub(val).wrapping_sub(carry_val);
+
+        cpu.registers.f = Flags::ZERO.self_or_empty(sub_res == 0) | Flags::ADD_SUB
+            | Flags::CARRY.self_or_empty((reg_val as u16) < (val as u16) + (carry_val as u16))
+            | Flags::HALF_CARRY.self_or_empty((reg_val & 0xf) < (val & 0xf) + carry_val);
     }
 
     fn load(self, dst: Dst, src: Src) {
@@ -409,6 +538,7 @@ where
                 cpu.registers.write16(reg, addr.wrapping_sub(1));
                 bus.write(addr, val as u8)
             }
+            Dst::Addr(addr) => bus.write(addr, val as u8),
         };
     }
 
@@ -432,6 +562,13 @@ where
             let addr = cpu.registers.read16(Reg16::PC).wrapping_add(offset as u16);
             cpu.registers.write16(Reg16::PC, addr);
         }
+    }
+
+    fn jr(self, offset: i8) {
+        let (cpu, _) = self;
+
+        let addr = cpu.registers.read16(Reg16::PC).wrapping_add(offset as u16);
+        cpu.registers.write16(Reg16::PC, addr);
     }
 
     fn ret(self, addr: u16) {

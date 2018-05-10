@@ -32,11 +32,13 @@ pub enum Dst {
     Reg16(Reg16),
     Reg16Inc(Reg16),
     Reg16Dec(Reg16),
+    Addr(u16),
 }
 
 #[derive(Copy, Clone, Debug)]
 pub enum JumpCondition {
     NZ,
+    Z,
 }
 
 impl JumpCondition {
@@ -45,6 +47,7 @@ impl JumpCondition {
 
         match *self {
             NZ => !flags.contains(Flags::ZERO),
+            Z => flags.contains(Flags::ZERO),
         }
     }
 }
@@ -58,12 +61,14 @@ pub enum Instruction {
     Xor(Info, Reg8),
     Call(Info, u16),
     JumpOn(Info, JumpCondition, i8),
+    Jump(Info, i8),
     Ret(Info, u16),
     Push16(Info, Reg16),
     Pop16(Info, Reg16),
-    RL(Info, Reg8),
-    RLA(Info),
+    RotateLeft(Info, Reg8, bool),
+    RotateLeftAkku(Info, bool),
     Inc16(Info, Reg16),
+    Compare(Info, u8),
 
     PrefixCB,
 }
@@ -80,12 +85,14 @@ impl Instruction {
             Xor(_, reg) => ops.xor(reg),
             Call(_, addr) => ops.call(addr),
             JumpOn(_, cond, offset) => ops.jr_c(cond, offset),
+            Jump(_, offset) => ops.jr(offset),
             Ret(_, addr) => ops.ret(addr),
             Push16(_, reg) => ops.push16(reg),
             Pop16(_, reg) => ops.pop16(reg),
-            RL(_, reg) => ops.rl(reg),
-            RLA(_) => ops.rl(Reg8::A),
+            RotateLeft(_, reg, set_zero) => ops.rl(reg, set_zero),
+            RotateLeftAkku(_, set_zero) => ops.rl(Reg8::A, set_zero),
             Inc16(_, reg) => ops.inc16(reg),
+            Compare(_, val) => ops.sub(val),
 
             PrefixCB => return ops.prefix_cb(),
 
@@ -120,6 +127,7 @@ impl fmt::Display for Dst {
             Reg16(reg) => write!(f, "{:?}", reg),
             Reg16Inc(reg) => write!(f, "({:?}+)", reg),
             Reg16Dec(reg) => write!(f, "({:?}-)", reg),
+            Addr(addr) => write!(f, "(${:#04X})", addr),
         }
     }
 }
@@ -129,20 +137,22 @@ impl fmt::Display for Instruction {
         use self::Instruction::*;
 
         match *self {
-            Nop(_) => Ok(()),
+            Nop(info) => write!(f, "{:02X} NOP", info.opcode),
             Bit(info, bit, reg) => write!(f, "{:02X} BIT {:?},{:?}", info.opcode, bit, reg),
             Dec(info, reg) => write!(f, "{:02X} DEC {:?}", info.opcode, reg),
             Inc(info, reg) => write!(f, "{:02X} INC {:?}", info.opcode, reg),
             Inc16(info, reg) => write!(f, "{:02X} INC {:?}", info.opcode, reg),
+            Compare(info, val) => write!(f, "{:02X} CP ${:#04X}", info.opcode, val),
             Load(info, dst, src) => write!(f, "{:02X} LD {:},{:}", info.opcode, dst, src),
             Xor(info, reg) => write!(f, "{:02X} XOR {:?}", info.opcode, reg),
             Call(info, addr) => write!(f, "{:02X} CALL ${:#06X}", info.opcode, addr),
             JumpOn(info, cd, addr) => write!(f, "{:02X} JR {:?},${:#04X}", info.opcode, cd, addr),
+            Jump(info, addr) => write!(f, "{:02X} JR ${:#04X}", info.opcode, addr),
             Ret(info, addr) => write!(f, "{:02X} RET ${:#06X}", info.opcode, addr),
             Push16(info, reg) => write!(f, "{:02X} PUSH {:?}", info.opcode, reg),
             Pop16(info, reg) => write!(f, "{:02X} POP {:?}", info.opcode, reg),
-            RL(info, reg) => write!(f, "{:02X} RL {:?}", info.opcode, reg),
-            RLA(info) => write!(f, "{:02X} RLA", info.opcode),
+            RotateLeft(info, reg, _) => write!(f, "{:02X} RL {:?}", info.opcode, reg),
+            RotateLeftAkku(info, _) => write!(f, "{:02X} RLA", info.opcode),
 
             PrefixCB => Ok(()),
         }

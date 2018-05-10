@@ -17,6 +17,10 @@ impl GameBoy {
         }
     }
 
+    pub fn pc(&self) -> u16 {
+        self.cpu.registers.read16(Reg16::PC)
+    }
+
     pub fn step(&mut self) {
         let addr = self.cpu.registers.read16(Reg16::PC);
         println!("${:04X} {:}", addr, self.cpu.step(&mut self.interconnect));

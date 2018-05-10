@@ -2,10 +2,10 @@ use std::fmt;
 
 bitflags!(
   pub struct Flags: u8 {
-    const ZERO = 0b_1000_0000;
-    const ADD_SUB = 0b_0100_0000;
-    const HALF_CARRY = 0b_0010_0000;
-    const CARRY = 0b_0001_0000;
+    const ZERO          = 0b_1000_0000;
+    const ADD_SUB       = 0b_0100_0000;
+    const HALF_CARRY    = 0b_0010_0000;
+    const CARRY         = 0b_0001_0000;
   }
 );
 
@@ -141,7 +141,7 @@ impl fmt::Display for Registers {
         write!(
             f,
             "PC:{:04X} SP:{:04X} \
-             A:{:02X} F:{:04b} B:{:02X} C:{:02X} \
+             A:{:02X} F:{:#08b} B:{:02X} C:{:02X} \
              D:{:02X} E:{:02X} H:{:02X} L:{:02X}",
             self.pc, self.sp, self.a, self.f, self.b, self.c, self.d, self.e, self.h, self.l
         )
