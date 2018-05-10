@@ -2,10 +2,10 @@ use std::fmt;
 
 bitflags!(
   pub struct Flags: u8 {
-    const ZERO          = 0b_1000_0000;
-    const ADD_SUB       = 0b_0100_0000;
-    const HALF_CARRY    = 0b_0010_0000;
-    const CARRY         = 0b_0001_0000;
+    const ZERO       = 0b_1000_0000; 
+    const ADD_SUB    = 0b_0100_0000;
+    const HALF_CARRY = 0b_0010_0000;
+    const CARRY      = 0b_0001_0000;
   }
 );
 
@@ -136,7 +136,7 @@ impl Registers {
     }
 }
 
-impl fmt::Display for Registers {
+impl fmt::Debug for Registers {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,

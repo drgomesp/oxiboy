@@ -12,10 +12,7 @@ pub struct Debugger {
 
 impl Debugger {
     pub fn new(gb: GameBoy) -> Self {
-        Self {
-            debug: true,
-            gb: gb,
-        }
+        Self { debug: true, gb }
     }
 
     pub fn run(&mut self) {
@@ -29,7 +26,7 @@ impl Debugger {
                     Ok(Breakpoint) => {
                         let addr = read_stdin().parse::<u16>().unwrap();
 
-                        while (self.gb.pc() != addr) {
+                        while self.gb.pc() != addr {
                             self.gb.step()
                         }
                     }
@@ -42,7 +39,7 @@ impl Debugger {
                         let addr = read_stdin().parse::<u16>().unwrap();
                         println!("${:#04X}: {:#02X}", addr, self.gb.mem(addr));
                     }
-                    Ok(DumpReg) => println!("{}", self.gb.cpu.registers),
+                    Ok(DumpReg) => println!("{:?}", self.gb.cpu.registers),
                     _ => println!("invalid input"),
                 };
             } else {

@@ -372,6 +372,15 @@ impl InstructionDecoding for LR35902 {
                 Dst::A8(self.next_u8(bus)),
                 Src::Reg8(Reg8::A),
             ),
+            0xF0 => Load(
+                Info {
+                    opcode: opcode,
+                    byte_length: 2,
+                    cycle_duration: 12,
+                },
+                Dst::Reg8(Reg8::A),
+                Src::PagedA8(self.next_u8(bus)),
+            ),
             0xFE => Compare(
                 Info {
                     opcode: opcode,
@@ -429,9 +438,7 @@ impl<'a, B> Ops for (&'a mut LR35902, &'a mut B)
 where
     B: Bus,
 {
-    fn nop(self) {
-        println!("nop");
-    }
+    fn nop(self) {}
 
     fn bit(self, bit: usize, reg: Reg8) {
         let (cpu, _) = self;
@@ -475,13 +482,13 @@ where
     fn inc(self, reg: Reg8) {
         let (cpu, _) = self;
         let val = cpu.registers.read8(reg);
-        let new_value = val.wrapping_add(1);
+        let new_val = val.wrapping_add(1);
 
-        cpu.registers.f = Flags::ZERO.self_or_empty(new_value == 0)
+        cpu.registers.f = Flags::ZERO.self_or_empty(new_val == 0)
             | Flags::HALF_CARRY.self_or_empty(val & 0xf == 0xf)
             | (Flags::CARRY & cpu.registers.f);
 
-        cpu.registers.write8(reg, new_value);
+        cpu.registers.write8(reg, new_val);
     }
 
     fn inc16(self, reg: Reg16) {
@@ -511,6 +518,7 @@ where
         let (cpu, bus) = self;
 
         let val: u16 = match src {
+            Src::PagedA8(val) => bus.read(0xFF00u16 | (val as u16)) as u16,
             Src::D8(val) => val as u16,
             Src::D16(val) => val,
             Src::Reg8(reg) => cpu.registers.read8(reg) as u16,
@@ -546,6 +554,7 @@ where
         let (cpu, _) = self;
         let v = cpu.registers.read8(reg);
         cpu.registers.write8(reg, v ^ v);
+        cpu.registers.f = Flags::ZERO.self_or_empty(cpu.registers.read8(Reg8::A) == 0)
     }
 
     fn call(self, addr: u16) {
@@ -566,7 +575,6 @@ where
 
     fn jr(self, offset: i8) {
         let (cpu, _) = self;
-
         let addr = cpu.registers.read16(Reg16::PC).wrapping_add(offset as u16);
         cpu.registers.write16(Reg16::PC, addr);
     }

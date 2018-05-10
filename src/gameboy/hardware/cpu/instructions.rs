@@ -1,8 +1,8 @@
 use std::fmt;
 
+use super::super::bus::Bus;
 use super::ops::Ops;
 use super::registers::{Flags, Reg16, Reg8};
-use super::super::bus::Bus;
 
 pub trait InstructionDecoding {
     fn decode<B: Bus>(&mut self, opcode: u8, b: &mut B) -> Instruction;
@@ -18,6 +18,7 @@ pub struct Info {
 
 #[derive(Copy, Clone, Debug)]
 pub enum Src {
+    PagedA8(u8),
     D8(u8),
     D16(u16),
     Reg8(Reg8),
@@ -108,6 +109,7 @@ impl fmt::Display for Src {
         use self::Src::*;
 
         match *self {
+            PagedA8(val) => write!(f, "($FF00+${:#04X})", val),
             D8(val) => write!(f, "${:#04X}", val),
             D16(val) => write!(f, "${:#04X}", val),
             Reg8(reg) => write!(f, "{:?}", reg),
@@ -137,22 +139,24 @@ impl fmt::Display for Instruction {
         use self::Instruction::*;
 
         match *self {
-            Nop(info) => write!(f, "{:02X} NOP", info.opcode),
-            Bit(info, bit, reg) => write!(f, "{:02X} BIT {:?},{:?}", info.opcode, bit, reg),
-            Dec(info, reg) => write!(f, "{:02X} DEC {:?}", info.opcode, reg),
-            Inc(info, reg) => write!(f, "{:02X} INC {:?}", info.opcode, reg),
-            Inc16(info, reg) => write!(f, "{:02X} INC {:?}", info.opcode, reg),
-            Compare(info, val) => write!(f, "{:02X} CP ${:#04X}", info.opcode, val),
-            Load(info, dst, src) => write!(f, "{:02X} LD {:},{:}", info.opcode, dst, src),
-            Xor(info, reg) => write!(f, "{:02X} XOR {:?}", info.opcode, reg),
-            Call(info, addr) => write!(f, "{:02X} CALL ${:#06X}", info.opcode, addr),
-            JumpOn(info, cd, addr) => write!(f, "{:02X} JR {:?},${:#04X}", info.opcode, cd, addr),
-            Jump(info, addr) => write!(f, "{:02X} JR ${:#04X}", info.opcode, addr),
-            Ret(info, addr) => write!(f, "{:02X} RET ${:#06X}", info.opcode, addr),
-            Push16(info, reg) => write!(f, "{:02X} PUSH {:?}", info.opcode, reg),
-            Pop16(info, reg) => write!(f, "{:02X} POP {:?}", info.opcode, reg),
-            RotateLeft(info, reg, _) => write!(f, "{:02X} RL {:?}", info.opcode, reg),
-            RotateLeftAkku(info, _) => write!(f, "{:02X} RLA", info.opcode),
+            Nop(info) => write!(f, "[{:02X}] -> NOP", info.opcode),
+            Bit(info, bit, reg) => write!(f, "[{:02X}] -> BIT {:?},{:?}", info.opcode, bit, reg),
+            Dec(info, reg) => write!(f, "[{:02X}] -> DEC {:?}", info.opcode, reg),
+            Inc(info, reg) => write!(f, "[{:02X}] -> INC {:?}", info.opcode, reg),
+            Inc16(info, reg) => write!(f, "[{:02X}] -> INC {:?}", info.opcode, reg),
+            Compare(info, val) => write!(f, "[{:02X}] -> CP ${:#04X}", info.opcode, val),
+            Load(info, dst, src) => write!(f, "[{:02X}] -> LD {:},{:}", info.opcode, dst, src),
+            Xor(info, reg) => write!(f, "[{:02X}] -> XOR {:?}", info.opcode, reg),
+            Call(info, addr) => write!(f, "[{:02X}] -> CALL ${:#06X}", info.opcode, addr),
+            JumpOn(info, cd, addr) => {
+                write!(f, "[{:02X}] -> JR {:?},${:#04X}", info.opcode, cd, addr)
+            }
+            Jump(info, addr) => write!(f, "[{:02X}] -> JR ${:#04X}", info.opcode, addr),
+            Ret(info, addr) => write!(f, "[{:02X}] -> RET ${:#06X}", info.opcode, addr),
+            Push16(info, reg) => write!(f, "[{:02X}] -> PUSH {:?}", info.opcode, reg),
+            Pop16(info, reg) => write!(f, "[{:02X}] -> POP {:?}", info.opcode, reg),
+            RotateLeft(info, reg, _) => write!(f, "[{:02X}] -> RL {:?}", info.opcode, reg),
+            RotateLeftAkku(info, _) => write!(f, "[{:02X}] -> RLA", info.opcode),
 
             PrefixCB => Ok(()),
         }
