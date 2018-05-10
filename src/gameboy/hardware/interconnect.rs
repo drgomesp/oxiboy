@@ -1,5 +1,6 @@
-use super::bus::Bus;
+use super::bus::MemoryBus;
 use super::ppu::PPU;
+use failure::Error;
 
 pub struct Interconnect {
     bootrom: Box<[u8]>,
@@ -63,12 +64,12 @@ impl Interconnect {
     }
 }
 
-impl Bus for Interconnect {
-    fn read(&self, addr: u16) -> u8 {
-        self.read_internal(addr)
+impl MemoryBus for Interconnect {
+    fn read(&self, addr: u16) -> Result<u8, Error> {
+        Ok(self.read_internal(addr))
     }
 
-    fn write(&mut self, addr: u16, val: u8) {
-        self.write_internal(addr, val)
+    fn write(&mut self, addr: u16, val: u8) -> Result<(), Error> {
+        Ok(self.write_internal(addr, val))
     }
 }

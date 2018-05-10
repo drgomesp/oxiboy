@@ -4,5 +4,10 @@ version = "0.1.0"
 authors = ["Daniel Ribeiro <drgomesp@gmail.com>"]
 
 [dependencies]
-byteorder = "1"
-bitflags = "1"
+bitflags = "*"
+clippy = {version = "0.0.21", optional = true}
+failure = "*"
+
+[features]
+default = []
+dev = ["clippy"]

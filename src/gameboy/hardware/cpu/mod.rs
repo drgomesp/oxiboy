@@ -6,7 +6,7 @@ use self::instructions::*;
 use self::registers::{Flags, Reg16, Reg8, Registers};
 
 use self::ops::Ops;
-use super::bus::Bus;
+use super::bus::MemoryBus;
 
 pub struct LR35902 {
     pub registers: Registers,
@@ -19,9 +19,9 @@ impl LR35902 {
         }
     }
 
-    pub fn step<B: Bus>(&mut self, bus: &mut B) -> Instruction {
+    pub fn step<B: MemoryBus>(&mut self, bus: &mut B) -> Instruction {
         let pc = self.registers.read16(Reg16::PC);
-        let opcode = bus.read(pc);
+        let opcode = bus.read(pc).unwrap();
 
         self.registers.write16(Reg16::PC, pc.wrapping_add(1));
         let instr = self.decode(opcode, bus);
@@ -29,37 +29,37 @@ impl LR35902 {
         instr.execute((self, bus))
     }
 
-    fn next_u8<B: Bus>(&mut self, bus: &mut B) -> u8 {
+    fn next_u8<B: MemoryBus>(&mut self, bus: &mut B) -> u8 {
         let pc = self.registers.read16(Reg16::PC);
         self.registers.write16(Reg16::PC, pc.wrapping_add(1));
-        bus.read(pc)
+        bus.read(pc).unwrap()
     }
 
-    fn next_u16<B: Bus>(&mut self, bus: &mut B) -> u16 {
+    fn next_u16<B: MemoryBus>(&mut self, bus: &mut B) -> u16 {
         let l = self.next_u8(bus);
         let h = self.next_u8(bus);
         ((h as u16) << 8) | (l as u16)
     }
 
-    fn push_u8<B: Bus>(&mut self, bus: &mut B, val: u8) {
+    fn push_u8<B: MemoryBus>(&mut self, bus: &mut B, val: u8) {
         let sp = self.registers.read16(Reg16::SP);
         self.registers.write16(Reg16::SP, sp.wrapping_sub(1));
-        bus.write(self.registers.read16(Reg16::SP), val)
+        bus.write(self.registers.read16(Reg16::SP), val).unwrap()
     }
 
-    fn push_u16<B: Bus>(&mut self, bus: &mut B, val: u16) {
+    fn push_u16<B: MemoryBus>(&mut self, bus: &mut B, val: u16) {
         self.push_u8(bus, (val >> 8) as u8);
         self.push_u8(bus, val as u8);
     }
 
-    fn pop_u8<B: Bus>(&mut self, bus: &mut B) -> u8 {
+    fn pop_u8<B: MemoryBus>(&mut self, bus: &mut B) -> u8 {
         let sp = self.registers.read16(Reg16::SP);
-        let val = bus.read(sp);
+        let val = bus.read(sp).unwrap();
         self.registers.write16(Reg16::SP, sp.wrapping_add(1));
         val
     }
 
-    fn pop_u16<B: Bus>(&mut self, bus: &mut B) -> u16 {
+    fn pop_u16<B: MemoryBus>(&mut self, bus: &mut B) -> u16 {
         let l = self.pop_u8(bus);
         let h = self.pop_u8(bus);
         ((h as u16) << 8 | (l as u16))
@@ -67,7 +67,7 @@ impl LR35902 {
 }
 
 impl InstructionDecoding for LR35902 {
-    fn decode<B: Bus>(&mut self, opcode: u8, bus: &mut B) -> Instruction {
+    fn decode<B: MemoryBus>(&mut self, opcode: u8, bus: &mut B) -> Instruction {
         use self::Instruction::*;
 
         match opcode {
@@ -407,7 +407,7 @@ impl InstructionDecoding for LR35902 {
         }
     }
 
-    fn decode_cb<B: Bus>(&mut self, opcode: u8, _: &mut B) -> Instruction {
+    fn decode_cb<B: MemoryBus>(&mut self, opcode: u8, _: &mut B) -> Instruction {
         use self::Instruction::*;
 
         match opcode {
@@ -436,7 +436,7 @@ impl InstructionDecoding for LR35902 {
 
 impl<'a, B> Ops for (&'a mut LR35902, &'a mut B)
 where
-    B: Bus,
+    B: MemoryBus,
 {
     fn nop(self) {}
 
@@ -444,7 +444,8 @@ where
         let (cpu, _) = self;
         let val = cpu.registers.read8(reg) & (1 << bit);
 
-        cpu.registers.f = Flags::ZERO.self_or_empty(val == 0) | Flags::HALF_CARRY
+        cpu.registers.f = Flags::ZERO.self_or_empty(val == 0)
+            | Flags::HALF_CARRY
             | (Flags::CARRY & cpu.registers.f);
     }
 
@@ -472,7 +473,8 @@ where
         let val = cpu.registers.read8(reg);
         let new_val = val.wrapping_sub(1);
 
-        cpu.registers.f = Flags::ZERO.self_or_empty(new_val == 0) | Flags::ADD_SUB
+        cpu.registers.f = Flags::ZERO.self_or_empty(new_val == 0)
+            | Flags::ADD_SUB
             | Flags::HALF_CARRY.self_or_empty(val & 0xf == 0)
             | (Flags::CARRY & cpu.registers.f);
 
@@ -509,7 +511,8 @@ where
         let reg_val = cpu.registers.read8(Reg8::A);
         let sub_res = reg_val.wrapping_sub(val).wrapping_sub(carry_val);
 
-        cpu.registers.f = Flags::ZERO.self_or_empty(sub_res == 0) | Flags::ADD_SUB
+        cpu.registers.f = Flags::ZERO.self_or_empty(sub_res == 0)
+            | Flags::ADD_SUB
             | Flags::CARRY.self_or_empty((reg_val as u16) < (val as u16) + (carry_val as u16))
             | Flags::HALF_CARRY.self_or_empty((reg_val & 0xf) < (val & 0xf) + carry_val);
     }
@@ -518,7 +521,7 @@ where
         let (cpu, bus) = self;
 
         let val: u16 = match src {
-            Src::PagedA8(val) => bus.read(0xFF00u16 | (val as u16)) as u16,
+            Src::PagedA8(val) => bus.read(0xFF00u16 | (val as u16)).unwrap() as u16,
             Src::D8(val) => val as u16,
             Src::D16(val) => val,
             Src::Reg8(reg) => cpu.registers.read8(reg) as u16,
@@ -530,12 +533,12 @@ where
                 let addr = 0xFF00u16 | val as u16;
                 bus.write(addr, cpu.registers.read8(Reg8::A))
             }
-            Dst::Reg8(reg) => cpu.registers.write8(reg, val as u8),
+            Dst::Reg8(reg) => Ok(cpu.registers.write8(reg, val as u8)),
             Dst::PagedReg8(reg) => {
                 let addr = 0xFF00u16 | cpu.registers.read8(reg) as u16;
                 bus.write(addr, cpu.registers.read8(Reg8::A))
             }
-            Dst::Reg16(reg) => cpu.registers.write16(reg, val),
+            Dst::Reg16(reg) => Ok(cpu.registers.write16(reg, val)),
             Dst::Reg16Inc(reg) => {
                 let addr = cpu.registers.read16(reg);
                 cpu.registers.write16(reg, addr.wrapping_add(1));

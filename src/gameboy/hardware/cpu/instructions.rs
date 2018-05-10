@@ -1,12 +1,12 @@
 use std::fmt;
 
-use super::super::bus::Bus;
+use super::super::bus::MemoryBus;
 use super::ops::Ops;
 use super::registers::{Flags, Reg16, Reg8};
 
 pub trait InstructionDecoding {
-    fn decode<B: Bus>(&mut self, opcode: u8, b: &mut B) -> Instruction;
-    fn decode_cb<B: Bus>(&mut self, opcode: u8, b: &mut B) -> Instruction;
+    fn decode<B: MemoryBus>(&mut self, opcode: u8, b: &mut B) -> Instruction;
+    fn decode_cb<B: MemoryBus>(&mut self, opcode: u8, b: &mut B) -> Instruction;
 }
 
 #[derive(Copy, Clone, Default)]
