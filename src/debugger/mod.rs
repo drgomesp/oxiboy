@@ -1,9 +1,9 @@
 mod command;
 
 use self::command::Command;
-use std::io::{stdin, stdout};
-use std::io::Write;
 use super::gameboy::GameBoy;
+use std::io::Write;
+use std::io::{stdin, stdout};
 
 pub struct Debugger {
     debug: bool,
@@ -38,7 +38,11 @@ impl Debugger {
                         self.gb.step()
                     }
                     Ok(Step) => self.gb.step(),
-                    Ok(DumpRegisters) => println!("{}", self.gb.cpu.registers),
+                    Ok(DumpMem) => {
+                        let addr = read_stdin().parse::<u16>().unwrap();
+                        println!("${:#04X}: {:#02X}", addr, self.gb.mem(addr));
+                    }
+                    Ok(DumpReg) => println!("{}", self.gb.cpu.registers),
                     _ => println!("invalid input"),
                 };
             } else {
