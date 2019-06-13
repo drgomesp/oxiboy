@@ -1,10 +1,12 @@
 use super::bus::MemoryBus;
 use super::ppu::PPU;
+use super::cartridge::Cartridge;
 use failure::Error;
 
 pub struct Interconnect {
     bootrom: Box<[u8]>,
 
+    cartridge: Cartridge,
     ppu: PPU,
 
     io: Box<[u8]>,
@@ -13,9 +15,11 @@ pub struct Interconnect {
 }
 
 impl Interconnect {
-    pub fn new(bootrom: Box<[u8]>) -> Self {
+    pub fn new(bootrom: Box<[u8]>, rom: Box<[u8]>) -> Self {
         Self {
             bootrom: bootrom,
+            cartridge: Cartridge::new(rom),
+
             ppu: PPU::new(),
 
             io: vec![0xFF; 127].into_boxed_slice(),
@@ -27,7 +31,7 @@ impl Interconnect {
     pub fn read_internal(&self, addr: u16) -> u8 {
         match addr {
             0x0...0xFF => self.bootrom[addr as usize],
-            0x0100...0x7FFF => panic!("time to map the cartdrige data! o/"),
+            0x0100...0x7FFF => self.cartridge.read(addr),
             0x8000...0x9FFF => self.ppu.read(addr - 0x8000),
             0xC000...0xDFFF => self.wram[(addr - 0xC000) as usize],
             0xFF00...0xFF7F => match addr {
