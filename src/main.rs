@@ -32,7 +32,10 @@ fn main() {
     let bootrom_file_name = env::args().nth(1).unwrap();
     let bootrom = read_bin(bootrom_file_name);
 
-    let gb = GameBoy::new(bootrom);
+    let rom_file_name = env::args().nth(2).unwrap();
+    let rom = read_bin(rom_file_name);
+
+    let gb = GameBoy::new(bootrom, rom);
     // let mut emu = Emulator::new(gb);
     let mut dbg = Debugger::new(gb);
     dbg.run();

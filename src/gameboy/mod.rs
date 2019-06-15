@@ -10,10 +10,10 @@ pub struct GameBoy {
 }
 
 impl GameBoy {
-    pub fn new(bootrom: Box<[u8]>) -> Self {
+    pub fn new(bootrom: Box<[u8]>, rom: Box<[u8]>) -> Self {
         Self {
             cpu: LR35902::new(),
-            interconnect: Interconnect::new(bootrom),
+            interconnect: Interconnect::new(bootrom, rom),
         }
     }
 
