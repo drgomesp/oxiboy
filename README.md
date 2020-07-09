@@ -1,6 +1,6 @@
 # OxiBoy
 
-This is a project I started for didatic purposes only. It's heavily inspired by existing emulators and the Rust emulator ecosystem.
+This is a project I started for didactic purposes only. It's heavily inspired by existing emulators and the Rust emulator ecosystem.
 
 ## References
 
