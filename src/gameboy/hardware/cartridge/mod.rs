@@ -5,7 +5,7 @@ pub struct Cartridge {
 impl Cartridge {
     pub fn new(rom: Box<[u8]>) -> Self {
         Self {
-            rom: rom,
+            rom,
         }
     }
 

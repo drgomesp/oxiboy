@@ -138,12 +138,10 @@ impl Registers {
 
 impl fmt::Debug for Registers {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "PC:{:04X} SP:{:04X} \
-             A:{:02X} F:{:#08b} B:{:02X} C:{:02X} \
-             D:{:02X} E:{:02X} H:{:02X} L:{:02X}",
-            self.pc, self.sp, self.a, self.f, self.b, self.c, self.d, self.e, self.h, self.l
-        )
+        write!(f, "+--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+\n");
+        write!(f, "|   PC   |   SP  |   A   |   F   |   B   |   C   |   D   |   E   |   H   |   L   |\n");
+        write!(f, "+--------+-------+-------+---------------+-------+-------+-------+-------+-------+\n");
+        write!(f, "|  {:04X}  |   {:02x}  |   {:02x}  |   {:02x}  |   {:02x}  |   {:02x}  |   {:02x}  |   {:02x}  |   {:02x}  |   {:02x}  |\n", self.pc, self.sp, self.a, self.f, self.b, self.c, self.d, self.e, self.h, self.l);
+        write!(f, "+--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+\n")
     }
 }

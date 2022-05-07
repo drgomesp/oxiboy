@@ -449,25 +449,6 @@ impl<'a, B> Ops for (&'a mut LR35902, &'a mut B)
             | (Flags::CARRY & cpu.registers.f);
     }
 
-    fn rl(self, reg: Reg8, set_zero: bool) {
-        let (cpu, _) = self;
-
-        let reg_val = cpu.registers.read8(reg);
-        let carry_val = if cpu.registers.f.contains(Flags::CARRY) {
-            1
-        } else {
-            0
-        };
-
-        let new_carry_val = reg_val & 0x80;
-        let new_reg_val = (reg_val << 1) | carry_val;
-
-        cpu.registers.f = Flags::ZERO.self_or_empty(set_zero && new_reg_val == 0)
-            | Flags::CARRY.self_or_empty(new_carry_val != 0);
-
-        cpu.registers.write8(reg, new_reg_val);
-    }
-
     fn dec(self, reg: Reg8) {
         let (cpu, _) = self;
         let val = cpu.registers.read8(reg);
@@ -491,30 +472,6 @@ impl<'a, B> Ops for (&'a mut LR35902, &'a mut B)
             | (Flags::CARRY & cpu.registers.f);
 
         cpu.registers.write8(reg, new_val);
-    }
-
-    fn inc16(self, reg: Reg16) {
-        let (cpu, _) = self;
-        let val = cpu.registers.read16(reg);
-
-        cpu.registers.write16(reg, val.wrapping_add(1));
-    }
-
-    fn sub(self, val: u8) {
-        let (cpu, _) = self;
-        let carry_val = if false && cpu.registers.f.contains(Flags::CARRY) {
-            1
-        } else {
-            0
-        };
-
-        let reg_val = cpu.registers.read8(Reg8::A);
-        let sub_res = reg_val.wrapping_sub(val).wrapping_sub(carry_val);
-
-        cpu.registers.f = Flags::ZERO.self_or_empty(sub_res == 0)
-            | Flags::ADD_SUB
-            | Flags::CARRY.self_or_empty((reg_val as u16) < (val as u16) + (carry_val as u16))
-            | Flags::HALF_CARRY.self_or_empty((reg_val & 0xf) < (val & 0xf) + carry_val);
     }
 
     fn load(self, dst: Dst, src: Src) {
@@ -597,6 +554,49 @@ impl<'a, B> Ops for (&'a mut LR35902, &'a mut B)
         let (cpu, bus) = self;
         let val = cpu.pop_u16(bus);
         cpu.registers.write16(reg, val);
+    }
+
+    fn rl(self, reg: Reg8, set_zero: bool) {
+        let (cpu, _) = self;
+
+        let reg_val = cpu.registers.read8(reg);
+        let carry_val = if cpu.registers.f.contains(Flags::CARRY) {
+            1
+        } else {
+            0
+        };
+
+        let new_carry_val = reg_val & 0x80;
+        let new_reg_val = (reg_val << 1) | carry_val;
+
+        cpu.registers.f = Flags::ZERO.self_or_empty(set_zero && new_reg_val == 0)
+            | Flags::CARRY.self_or_empty(new_carry_val != 0);
+
+        cpu.registers.write8(reg, new_reg_val);
+    }
+
+    fn inc16(self, reg: Reg16) {
+        let (cpu, _) = self;
+        let val = cpu.registers.read16(reg);
+
+        cpu.registers.write16(reg, val.wrapping_add(1));
+    }
+
+    fn sub(self, val: u8) {
+        let (cpu, _) = self;
+        let carry_val = if false && cpu.registers.f.contains(Flags::CARRY) {
+            1
+        } else {
+            0
+        };
+
+        let reg_val = cpu.registers.read8(Reg8::A);
+        let sub_res = reg_val.wrapping_sub(val).wrapping_sub(carry_val);
+
+        cpu.registers.f = Flags::ZERO.self_or_empty(sub_res == 0)
+            | Flags::ADD_SUB
+            | Flags::CARRY.self_or_empty((reg_val as u16) < (val as u16) + (carry_val as u16))
+            | Flags::HALF_CARRY.self_or_empty((reg_val & 0xf) < (val & 0xf) + carry_val);
     }
 
     fn prefix_cb(self) -> Instruction {

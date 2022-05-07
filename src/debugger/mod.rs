@@ -18,6 +18,17 @@ impl Debugger {
     }
 
     pub fn run(&mut self) {
+        // clear terminal screen and position at top-left
+        print!("\x1B[2J\x1B[1;1H");
+
+        print!("oxiboy> \
+            [s] step \
+            [c] continue \
+            [bp] add breakpoint \
+            [r] dump registers \
+            [m] dump memory\
+        \n");
+
         loop {
             if self.debug {
                 print!("oxiboy> ");
@@ -41,7 +52,7 @@ impl Debugger {
                         let addr = read_stdin().parse::<u16>().unwrap();
                         println!("${:#04X}: {:#02X}", addr, self.gb.mem(addr));
                     }
-                    Ok(DumpReg) => println!("{:?}", self.gb.cpu.registers),
+                    Ok(DumpReg) => println!("\n{:?}", self.gb.cpu.registers),
                     _ => println!("invalid input"),
                 };
             } else {
