@@ -1,9 +1,11 @@
-mod command;
+use std::io::{stdin, stdout};
+use std::io::Write;
+
+use super::gameboy::GameBoy;
 
 use self::command::Command;
-use super::gameboy::GameBoy;
-use std::io::Write;
-use std::io::{stdin, stdout};
+
+mod command;
 
 pub struct Debugger {
     debug: bool,

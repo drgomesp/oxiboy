@@ -1,7 +1,8 @@
-pub mod registers;
+use std::fmt;
 
 use self::registers::Control;
-use std::fmt;
+
+pub mod registers;
 
 #[derive(PartialEq, Eq)]
 enum Mode {
@@ -11,7 +12,6 @@ enum Mode {
 pub struct PPU {
     vram: Box<[u8]>,
     control: Control,
-
     current_line: u8,
     scroll_x: u8,
     scroll_y: u8,
@@ -60,6 +60,6 @@ impl PPU {
 
 impl fmt::Debug for PPU {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Control:{:08b}", self.control.bits(),)
+        write!(f, "Control:{:08b}", self.control.bits(), )
     }
 }

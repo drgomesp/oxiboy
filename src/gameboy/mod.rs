@@ -1,8 +1,8 @@
-mod hardware;
-
 use self::hardware::cpu::LR35902;
 use self::hardware::cpu::registers::Reg16;
 use self::hardware::interconnect::Interconnect;
+
+mod hardware;
 
 pub struct GameBoy {
     pub cpu: LR35902,
@@ -16,7 +16,7 @@ impl GameBoy {
             interconnect: Interconnect::new(bootrom, rom),
         }
     }
-
+    
     pub fn pc(&self) -> u16 {
         self.cpu.registers.read16(Reg16::PC)
     }

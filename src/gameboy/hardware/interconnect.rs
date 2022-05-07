@@ -1,14 +1,13 @@
-use super::bus::MemoryBus;
-use super::ppu::PPU;
-use super::cartridge::Cartridge;
 use failure::Error;
+
+use super::bus::MemoryBus;
+use super::cartridge::Cartridge;
+use super::ppu::PPU;
 
 pub struct Interconnect {
     bootrom: Box<[u8]>,
-
     cartridge: Cartridge,
     ppu: PPU,
-
     io: Box<[u8]>,
     wram: Box<[u8]>,
     hram: Box<[u8]>,
@@ -17,11 +16,9 @@ pub struct Interconnect {
 impl Interconnect {
     pub fn new(bootrom: Box<[u8]>, rom: Box<[u8]>) -> Self {
         Self {
-            bootrom: bootrom,
+            bootrom,
             cartridge: Cartridge::new(rom),
-
             ppu: PPU::new(),
-
             io: vec![0xFF; 127].into_boxed_slice(),
             wram: vec![0xFF; 8192].into_boxed_slice(),
             hram: vec![0xFF; 127].into_boxed_slice(),
@@ -47,11 +44,11 @@ impl Interconnect {
 
     fn write_internal(&mut self, addr: u16, val: u8) {
         match addr {
-            0x0100...0x7FFF => panic!("-- writing cartdrige mem val:{:#04X} addr: ${:#06X}", val, addr - 0x0100),
+            0x0100...0x7FFF => panic!("-- writing cartridge mem val:{:#04X} addr: ${:#06X}", val, addr - 0x0100),
             0x8000...0x9FFF => self.ppu.write(addr - 0x8000, val),
             0xC000...0xDFFF => {
                 self.wram[(addr - 0xC000) as usize] = val;
-            },
+            }
             0xFF00...0xFF7F => {
                 match addr {
                     0xFF40 => self.ppu.set_control(val),
@@ -59,7 +56,7 @@ impl Interconnect {
                     0xFF44 => panic!("kurwa!"),
                     _ => self.io[(addr - 0xFF00) as usize] = val
                 }
-            },
+            }
             0xFF80...0xFFFE => self.hram[(addr - 0xFF80) as usize] = val,
             _ => {
                 panic!("!!TODO: write_internal(${:#04X}, {:#02X}): not implemented yet: missing relative adddr to physical addr mapping", addr, val)

@@ -1,12 +1,12 @@
+use super::bus::MemoryBus;
+
+use self::instructions::*;
+use self::ops::Ops;
+use self::registers::{Flags, Reg16, Reg8, Registers};
+
 mod instructions;
 mod ops;
 pub mod registers;
-
-use self::instructions::*;
-use self::registers::{Flags, Reg16, Reg8, Registers};
-
-use self::ops::Ops;
-use super::bus::MemoryBus;
 
 pub struct LR35902 {
     pub registers: Registers,
@@ -435,8 +435,8 @@ impl InstructionDecoding for LR35902 {
 }
 
 impl<'a, B> Ops for (&'a mut LR35902, &'a mut B)
-where
-    B: MemoryBus,
+    where
+        B: MemoryBus,
 {
     fn nop(self) {}
 
